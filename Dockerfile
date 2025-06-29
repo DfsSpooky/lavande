@@ -1,18 +1,22 @@
+# Usar una imagen base de Python
 FROM python:3.12-slim
 
+# Establecer variables de entorno
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Establecer el directorio de trabajo
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    libpq-dev gcc libjpeg-dev zlib1g-dev libfreetype6-dev libpng-dev \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
+# Instalar dependencias
+COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copiar el código del proyecto
+COPY . /app/
 
-RUN python manage.py collectstatic --noinput
-
+# Exponer el puerto en el que correrá Gunicorn
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "laundry_app.wsgi:application"]
+# Comando para ejecutar la aplicación
+CMD ["gunicorn", "laundry_app.wsgi:application", "--bind", "0.0.0.0:8000"]
