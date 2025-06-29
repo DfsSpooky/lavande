@@ -1,0 +1,67 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Historial de Ventas{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-xl shadow-md">
+    <div class="flex justify-between items-center border-b pb-4 mb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Historial de Ventas</h1>
+            <p class="text-sm text-gray-500">Consulta todas las ventas de productos realizadas.</p>
+        </div>
+        <a href="{% url 'create_sale' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold flex items-center">
+            <i class="fas fa-plus mr-2"></i> Nueva Venta
+        </a>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3">Venta ID</th>
+                    <th scope="col" class="px-6 py-3">Cliente</th>
+                    <th scope="col" class="px-6 py-3">Fecha</th>
+                    <th scope="col" class="px-6 py-3">Monto Total</th>
+                    <th scope="col" class="px-6 py-3 text-center">Ticket</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in page_obj %}
+                <tr class="bg-white border-b hover:bg-gray-50">
+                    <td class="px-6 py-4 font-medium text-gray-900">#{{ sale.id }}</td>
+                    <td class="px-6 py-4">{{ sale.customer.name|default:"Venta de Mostrador" }}</td>
+                    <td class="px-6 py-4">{{ sale.created_at|date:"d/m/Y H:i" }}</td>
+                    <td class="px-6 py-4 font-semibold">S/ {{ sale.total_amount|floatformat:2 }}</td>
+                    
+                    <td class="px-6 py-4 text-center">
+                        <a href="{% url 'print_sale_ticket' sale.id %}" target="_blank" class="text-gray-600 hover:text-blue-800" title="Imprimir Ticket">
+                            <i class="fas fa-print fa-lg"></i>
+                        </a>
+                    </td>
+                    </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-10 text-gray-500">No hay ventas registradas. <a href="{% url 'create_sale' %}" class="text-blue-600 hover:underline">Realiza la primera</a>.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="mt-4 flex justify-between items-center">
+        <span class="text-sm text-gray-700">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
+        </span>
+        <div>
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">&laquo; Anterior</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Siguiente &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

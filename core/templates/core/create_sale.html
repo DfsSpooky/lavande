@@ -1,0 +1,274 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Punto de Venta{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .product-grid::-webkit-scrollbar { width: 8px; }
+    .product-grid::-webkit-scrollbar-track { background: #f1f1f1; }
+    .product-grid::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    .product-grid::-webkit-scrollbar-thumb:hover { background: #555; }
+    .product-card { transition: transform 0.2s, box-shadow 0.2s; }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    .product-card.out-of-stock { opacity: 0.5; cursor: not-allowed; }
+    .modal.hidden { display: none; }
+</style>
+
+<div id="pos-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-100px)]">
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-md flex flex-col">
+        <div class="p-4 border-b">
+            <h2 class="text-xl font-bold text-gray-800">Productos</h2>
+            <div class="mt-2"><input type="text" id="product-search" placeholder="Buscar producto por nombre..." class="w-full p-2 border rounded-lg"></div>
+        </div>
+        <div id="product-grid" class="product-grid p-4 flex-grow overflow-y-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {% for product in all_products %}
+                <div class="product-card border rounded-lg p-2 cursor-pointer flex flex-col items-center text-center bg-gray-50" 
+                     data-id="{{ product.id }}" data-name="{{ product.name }}" data-price="{{ product.price }}" data-stock="{{ product.stock }}">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="h-20 w-20 object-cover mb-2 rounded">
+                    {% else %}
+                        <img src="{% static 'images/placeholder.png' %}" alt="{{ product.name }}" class="h-20 w-20 object-cover mb-2 rounded">
+                    {% endif %}
+                    <p class="font-semibold text-sm">{{ product.name }}</p>
+                    <p class="text-xs text-gray-600">S/ {{ product.price|floatformat:2 }}</p>
+                    <p class="text-xs font-bold {% if product.stock < 5 %}text-red-500{% else %}text-blue-500{% endif %}">Stock: {{ product.stock }}</p>
+                </div>
+            {% empty %}
+                <p class="col-span-full text-center text-gray-500 mt-10">No hay productos disponibles.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-md flex flex-col">
+        <div class="p-4 border-b"><h2 class="text-xl font-bold text-gray-800">Carrito de Venta</h2></div>
+        
+        <form id="sale-form" class="flex flex-col flex-grow">
+            {% csrf_token %}
+            <div id="cart-items" class="p-4 flex-grow overflow-y-auto">
+                <div id="cart-empty-message" class="text-center text-gray-500 pt-10">
+                    <i class="fas fa-shopping-cart fa-3x text-gray-300 mb-2"></i>
+                    <p>El carrito está vacío</p>
+                </div>
+            </div>
+
+            <div class="p-4 border-t bg-gray-50 space-y-4">
+                <div class="flex justify-between font-bold text-xl">
+                    <span>TOTAL:</span>
+                    <span id="cart-total">S/ 0.00</span>
+                </div>
+                
+                <div class="space-y-3">
+                    <div><label for="{{ sale_form.customer.id_for_label }}" class="text-sm font-medium">{{ sale_form.customer.label }}</label>{{ sale_form.customer }}</div>
+                    <div><label for="{{ sale_form.payment_method.id_for_label }}" class="text-sm font-medium">{{ sale_form.payment_method.label }}</label>{{ sale_form.payment_method }}</div>
+                    <div><label for="{{ sale_form.payment_status.id_for_label }}" class="text-sm font-medium">{{ sale_form.payment_status.label }}</label>{{ sale_form.payment_status }}</div>
+                </div>
+
+                <button type="submit" id="submit-sale-btn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 text-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle mr-2"></i> Finalizar Venta
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="confirmation-modal" class="modal hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-md p-6">
+        <div class="text-center">
+            <h3 class="text-2xl font-bold text-gray-800">Confirmar Venta</h3>
+            <p class="text-gray-500 mt-2">Por favor, revisa los detalles antes de guardar.</p>
+        </div>
+        
+        <div class="mt-6 space-y-3 border-t border-b py-4">
+            <div class="flex justify-between">
+                <span class="text-gray-600">Cliente:</span>
+                <span id="modal-customer-name" class="font-semibold text-gray-800"></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">Método de Pago:</span>
+                <span id="modal-payment-method" class="font-semibold text-gray-800"></span>
+            </div>
+            <div class="flex justify-between text-xl">
+                <span class="font-bold text-gray-700">Total a Pagar:</span>
+                <span id="modal-total-amount" class="font-bold text-blue-600"></span>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-4 mt-6">
+            <button type="button" id="cancel-modal-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold">
+                Cancelar
+            </button>
+            <button type="button" id="confirm-sale-btn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-bold flex items-center">
+                <i class="fas fa-check mr-2"></i>Confirmar y Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- INICIALIZACIÓN Y VARIABLES ---
+    const productGrid = document.getElementById('product-grid');
+    const cartItemsContainer = document.getElementById('cart-items');
+    const cartTotalEl = document.getElementById('cart-total');
+    const cartEmptyMessage = document.getElementById('cart-empty-message');
+    const saleForm = document.getElementById('sale-form');
+    const submitButton = document.getElementById('submit-sale-btn');
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const confirmSaleButton = document.getElementById('confirm-sale-btn');
+    const cancelModalButton = document.getElementById('cancel-modal-btn');
+    
+    let cart = {}; // Objeto que guarda el estado del carrito
+
+    // Inicializar el buscador de clientes
+    $('#id_customer').select2({
+         placeholder: "Busca un cliente o deja en blanco",
+         allowClear: true,
+         width: '100%'
+    });
+
+    // --- LÓGICA DEL CARRITO ---
+    function addProductToCart(id, name, price, stock) {
+        if (cart[id]) {
+            if (cart[id].quantity < stock) {
+                cart[id].quantity++;
+            } else {
+                alert('No hay más stock disponible para este producto.');
+            }
+        } else {
+            if (stock > 0) {
+                cart[id] = { name, price, quantity: 1, stock };
+            } else {
+                alert('Este producto no tiene stock.');
+                return;
+            }
+        }
+        renderCart();
+    }
+
+    function renderCart() {
+        cartItemsContainer.innerHTML = '';
+        let total = 0;
+
+        if (Object.keys(cart).length === 0) {
+            cartItemsContainer.innerHTML = cartEmptyMessage.outerHTML; // Restaurar mensaje de carrito vacío
+            cartTotalEl.textContent = 'S/ 0.00';
+            return;
+        }
+
+        for (const id in cart) {
+            const item = cart[id];
+            total += item.price * item.quantity;
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex items-center justify-between p-2 border-b';
+            itemDiv.innerHTML = `
+                <div><p class="font-semibold text-sm">${item.name}</p><p class="text-xs text-gray-500">S/ ${item.price.toFixed(2)}</p></div>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="quantity-change h-6 w-6 bg-red-100 text-red-600 rounded-full" data-id="${id}" data-change="-1">-</button>
+                    <span class="font-bold w-6 text-center">${item.quantity}</span>
+                    <button type="button" class="quantity-change h-6 w-6 bg-green-100 text-green-600 rounded-full" data-id="${id}" data-change="1">+</button>
+                </div>`;
+            cartItemsContainer.appendChild(itemDiv);
+        }
+        cartTotalEl.textContent = `S/ ${total.toFixed(2)}`;
+    }
+
+    productGrid.addEventListener('click', function(e) {
+        const card = e.target.closest('.product-card');
+        if (!card || card.classList.contains('out-of-stock')) return;
+        addProductToCart(card.dataset.id, card.dataset.name, parseFloat(card.dataset.price), parseInt(card.dataset.stock));
+    });
+
+    cartItemsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('quantity-change')) {
+            const id = e.target.dataset.id;
+            const change = parseInt(e.target.dataset.change);
+            if (!cart[id]) return;
+            const newQuantity = cart[id].quantity + change;
+            if (newQuantity > cart[id].stock) { alert('No hay más stock.'); return; }
+            if (newQuantity <= 0) {
+                delete cart[id];
+            } else {
+                cart[id].quantity = newQuantity;
+            }
+            renderCart();
+        }
+    });
+
+    // --- LÓGICA DE BÚSQUEDA ---
+    document.getElementById('product-search').addEventListener('keyup', function(e) {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.style.display = card.dataset.name.toLowerCase().includes(term) ? 'flex' : 'none';
+        });
+    });
+
+    // --- LÓGICA DE ENVÍO Y MODAL ---
+    saleForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (Object.keys(cart).length === 0) {
+            alert('El carrito está vacío. Añade al menos un producto.');
+            return;
+        }
+        
+        const customerSelect = document.getElementById('id_customer');
+        const paymentSelect = document.getElementById('id_payment_method');
+        
+        document.getElementById('modal-customer-name').textContent = customerSelect.options[customerSelect.selectedIndex]?.text || "Venta de Mostrador";
+        document.getElementById('modal-payment-method').textContent = paymentSelect.options[paymentSelect.selectedIndex].text;
+        document.getElementById('modal-total-amount').textContent = cartTotalEl.textContent;
+
+        confirmationModal.classList.remove('hidden');
+    });
+
+    cancelModalButton.addEventListener('click', function() {
+        confirmationModal.classList.add('hidden');
+    });
+
+    confirmSaleButton.addEventListener('click', async function() {
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
+
+        const saleData = {
+            customer_id: document.getElementById('id_customer').value,
+            payment_method: document.getElementById('id_payment_method').value,
+            payment_status: document.getElementById('id_payment_status').value,
+            cart: Object.keys(cart).map(id => ({ id: id, quantity: cart[id].quantity }))
+        };
+
+        try {
+            const response = await fetch("{% url 'create_sale' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(saleData)
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                window.open(data.ticket_url, '_blank');
+                cart = {};
+                renderCart();
+                saleForm.reset();
+                $('#id_customer').val(null).trigger('change');
+                confirmationModal.classList.add('hidden');
+            } else {
+                alert(`Error al crear la venta: ${data.error}`);
+            }
+        } catch (error) {
+            alert('Error de conexión. Inténtalo de nuevo.');
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check mr-2"></i>Confirmar y Guardar';
+        }
+    });
+});
+</script>
+{% endblock %}

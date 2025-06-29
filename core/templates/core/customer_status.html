@@ -1,0 +1,75 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Estado de Pedidos{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+    <h1 class="text-2xl sm:text-3xl font-bold mb-6 flex items-center">
+        <i class="fas fa-shopping-cart mr-2 text-blue-600"></i> Estado de tus Pedidos, {{ customer.name }}
+    </h1>
+    <div class="overflow-x-auto">
+        {% if orders %}
+            <table class="w-full table-auto bg-white rounded-lg shadow text-xs sm:text-sm">
+                <thead>
+                    <tr class="bg-blue-100 text-blue-800">
+                        <th class="px-2 py-2 sm:px-4">ID</th>
+                        <th class="px-2 py-2 sm:px-4">Estado</th>
+                        <th class="px-2 py-2 sm:px-4 hidden sm:table-cell">Total</th>
+                        <th class="px-2 py-2 sm:px-4 hidden md:table-cell">Categorías</th>
+                        <th class="px-2 py-2 sm:px-4 hidden md:table-cell">Método de Pago</th>
+                        <th class="px-2 py-2 sm:px-4">Estado de Pago</th>
+                        <th class="px-2 py-2 sm:px-4 hidden md:table-cell">Monto Pagado</th>
+                        <th class="px-2 py-2 sm:px-4">Falta Pagar</th>
+                        <th class="px-2 py-2 sm:px-4 hidden sm:table-cell">Creado</th>
+                        <th class="px-2 py-2 sm:px-4 hidden sm:table-cell">Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="px-2 py-2 sm:px-4">{{ order.id }}</td>
+                            <td class="px-2 py-2 sm:px-4">
+                                {% if order.status == 'READY' %}
+                                    <span class="text-green-600 font-semibold flex items-center">
+                                        <i class="fas fa-check-circle mr-1"></i> Listo para recoger
+                                    </span>
+                                {% elif order.status == 'CANCELLED' %}
+                                    <span class="text-red-600 font-semibold flex items-center">
+                                        <i class="fas fa-times-circle mr-1"></i> Anulado
+                                    </span>
+                                {% else %}
+                                    <span class="text-yellow-600 flex items-center">
+                                        <i class="fas fa-hourglass-half mr-1"></i> En proceso
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-2 sm:px-4 hidden sm:table-cell">S/{{ order.total_price|floatformat:2 }}</td>
+                            <td class="px-2 py-2 sm:px-4 hidden md:table-cell">
+                                {% for oc in order.ordercategory_set.all %}
+                                    {{ oc.category.name }} (x{{ oc.quantity }}){% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    Sin categorías
+                                {% endfor %}
+                            </td>
+                            <td class="px-2 py-2 sm:px-4 hidden md:table-cell">{{ order.get_payment_method_display }}</td>
+                            <td class="px-2 py-2 sm:px-4">{{ order.get_payment_status_display }}</td>
+                            <td class="px-2 py-2 sm:px-4 hidden md:table-cell">
+                                {% if order.payment_status == 'PARTIAL' %}
+                                    S/{{ order.partial_amount|floatformat:2 }}
+                                {% else %}
+                                    S/0.00
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-2 sm:px-4">S/{{ order.remaining_amount|floatformat:2 }}</td>
+                            <td class="px-2 py-2 sm:px-4 hidden sm:table-cell">{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="px-2 py-2 sm:px-4 hidden sm:table-cell">{{ order.notes|default:"Sin notas" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="text-gray-600 text-sm sm:text-base">No tienes pedidos registrados.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Recepción por Peso{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-md max-w-lg mx-auto">
+    <div class="p-6 border-b border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-weight-hanging mr-3 text-blue-600"></i> Recepción de Pedido por Peso
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">
+            {% if customer %}
+                Paso 2: Ingresa el peso y las notas para <strong>{{ customer.name }}</strong>.
+            {% else %}
+                Paso 1: Busca al cliente para iniciar el registro.
+            {% endif %}
+        </p>
+    </div>
+
+    <form method="post" id="receiveForm">
+        {% csrf_token %}
+        <div class="p-6 space-y-6">
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-green-50 text-green-800 border border-green-200{% endif %}" role="alert">
+                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+
+            {% if not customer %}
+            <div class="space-y-4">
+                <div>
+                    <label for="{{ form.customer_code.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.customer_code.label }}</label>
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-grow">{{ form.customer_code }}</div>
+                        <button type="button" onclick="openQRScanner()" title="Escanear QR" class="flex-shrink-0 bg-blue-100 text-blue-700 px-4 h-11 rounded-lg hover:bg-blue-200 font-semibold">
+                            <i class="fas fa-qrcode text-xl"></i>
+                        </button>
+                    </div>
+                    {% if form.customer_code.errors %}<p class="text-red-600 text-sm mt-1">{{ form.customer_code.errors|first }}</p>{% endif %}
+                </div>
+                <div class="pt-2">
+                    <button type="submit" name="action" value="search" class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg hover:bg-gray-800 font-bold flex items-center justify-center">
+                        <i class="fas fa-search mr-2"></i> Buscar Cliente
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if customer %}
+            <div>
+                {{ form.customer_code.as_hidden }}
+                <input type="hidden" name="customer_id" value="{{ customer.id }}">
+
+                <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-500">Cliente</h3>
+                    <p class="text-xl font-bold text-blue-800">{{ customer.name }} <span class="text-gray-500 font-normal">(Código: {{ customer.customer_code }})</span></p>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-6 mb-6">
+                    <div>
+                        <label for="{{ form.weight.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.weight.label }}</label>
+                        {{ form.weight }}
+                        {% if form.weight.errors %}<p class="text-red-600 text-sm mt-1">{{ form.weight.errors|first }}</p>{% endif %}
+                    </div>
+                     <div>
+                        <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.notes.label }}</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}<p class="text-red-600 text-sm mt-1">{{ form.notes.errors|first }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-gray-200">
+                    <button type="submit" name="action" value="confirm" class="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-bold text-lg flex items-center justify-center">
+                        <i class="fas fa-check-double mr-2"></i> Confirmar y Crear Pedido
+                    </button>
+                    <a href="{% url 'receive_order' %}" class="mt-3 block text-center text-sm text-gray-500 hover:text-gray-700">Cancelar</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<div id="qrScannerModal" onclick="closeQRScanner()" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md relative" onclick="event.stopPropagation()">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Apunte la cámara al código QR</h3>
+            <button onclick="closeQRScanner()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-4 bg-black"><video id="video" class="w-full h-auto rounded-lg"></video></div>
+        <canvas id="canvas" class="hidden"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+    // --- Variables y Funciones Globales para el Modal del QR ---
+    const qrModal = document.getElementById('qrScannerModal');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const receiveForm = document.getElementById('receiveForm');
+    const customerCodeInput = document.getElementById('id_customer_code');
+    let stream = null;
+    let animationFrameId = null;
+
+    function openQRScanner() {
+        if (!qrModal) return;
+        qrModal.classList.remove('hidden');
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(s => {
+                stream = s;
+                video.srcObject = stream;
+                video.play();
+                animationFrameId = requestAnimationFrame(scanQR);
+            }).catch(err => {
+                alert("No se pudo acceder a la cámara. Por favor, revisa los permisos.");
+                closeQRScanner();
+            });
+    }
+
+    function closeQRScanner() {
+        if (!qrModal) return;
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        qrModal.classList.add('hidden');
+    }
+
+    function scanQR() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            const canvasContext = canvas.getContext('2d');
+            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (code && customerCodeInput) {
+                const urlPrefix = 'http://localhost:8000/customer/';
+                customerCodeInput.value = code.data.includes(urlPrefix) ? code.data.replace(urlPrefix, '') : code.data;
+                closeQRScanner();
+                // Opcional: enviar formulario de búsqueda automáticamente tras escanear.
+                // Si quieres que busque al cliente inmediatamente después de escanear, descomenta la línea siguiente.
+                // document.querySelector('button[name="action"][value="search"]').click();
+            } else {
+                animationFrameId = requestAnimationFrame(scanQR);
+            }
+        } else {
+            animationFrameId = requestAnimationFrame(scanQR);
+        }
+    }
+
+    // --- Estilos de Formulario ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const baseClasses = 'block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm';
+        const iconClasses = 'pl-10';
+
+        if (customerCodeInput) {
+            customerCodeInput.classList.add(...baseClasses.split(' '), ...iconClasses.split(' '));
+        }
+        
+        const weightInput = document.getElementById('id_weight');
+        if(weightInput) {
+            weightInput.classList.add(...baseClasses.split(' '));
+        }
+
+        const notesInput = document.getElementById('id_notes');
+        if(notesInput) {
+            notesInput.classList.add(...baseClasses.split(' '));
+            notesInput.rows = 3;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lavandería Moderna | El Futuro del Cuidado Textil{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --primary-glow: #22a0f1;
+            --secondary-glow: #7877f4;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: #e6edf3; overflow-x: hidden; }
+        html { scroll-behavior: smooth; }
+        @keyframes float { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-100vh) scale(0.5); opacity: 0; } }
+        .particle { position: absolute; bottom: -20px; background-color: var(--primary-glow); border-radius: 50%; animation: float linear infinite; }
+        .github-card { background-color: rgba(22, 27, 34, 0.8); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; transition: all 0.3s ease; position: relative; overflow: hidden; height: 100%; }
+        .github-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; background: radial-gradient(400px circle at var(--mouse-x) var(--mouse-y), rgba(34, 160, 241, 0.2), transparent 40%); opacity: 0; transition: opacity 0.3s ease; z-index: 1; }
+        .github-card:hover::before { opacity: 1; }
+        .github-card:hover { border-color: rgba(34, 160, 241, 0.5); }
+        .github-card > * { position: relative; z-index: 2; }
+        .is-hidden { display: none !important; }
+
+        /* Estilos para el acordeón de FAQ */
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 z-50 bg-black/50 backdrop-blur-md">
+         <nav class="container mx-auto px-6 py-4 flex justify-between items-center border-b border-slate-300/10">
+            <a href="#" id="secret-tap-target" class="text-xl font-bold flex items-center gap-3 text-white">
+                <i class="fas fa-atom fa-spin" style="--fa-animation-duration: 10s; color: var(--primary-glow);"></i>
+                Lavandería Moderna
+            </a>
+            <div class="hidden md:flex items-center space-x-8 font-semibold">
+                <a href="#servicios" class="text-slate-300 hover:text-white transition-colors">Servicios</a>
+                <a href="#como-funciona" class="text-slate-300 hover:text-white transition-colors">Proceso</a>
+                <a href="#testimonios" class="text-slate-300 hover:text-white transition-colors">Testimonios</a>
+                <a href="#faq" class="text-slate-300 hover:text-white transition-colors">FAQ</a>
+                <a href="#contacto" class="text-slate-300 hover:text-white transition-colors">Contacto</a>
+            </div>
+            <div>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="bg-white/10 border border-white/20 text-white px-5 py-2.5 rounded-lg hover:bg-white/20 font-bold transition-all duration-300 flex items-center gap-2">
+                        <i class="fas fa-user-circle"></i> Dashboard
+                    </a>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}" id="secret-login-button" class="is-hidden bg-white text-black px-5 py-2.5 rounded-lg font-bold shadow-lg shadow-white/20 hover:scale-105 transition-all duration-300 flex items-center gap-2">
+                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                    </a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main class="relative z-10">
+        <section class="relative min-h-[85vh] flex items-center justify-center text-center overflow-hidden py-20 px-4">
+             <div id="particle-container" class="absolute inset-0 z-0">
+                <div class="particle" style="width: 5px; height: 5px; left: 10%; animation-duration: 15s; animation-delay: -2s;"></div>
+                <div class="particle" style="width: 2px; height: 2px; left: 20%; animation-duration: 10s; animation-delay: -5s; background-color: var(--secondary-glow);"></div>
+                <div class="particle" style="width: 4px; height: 4px; left: 30%; animation-duration: 20s; animation-delay: 0s;"></div>
+                <div class="particle" style="width: 6px; height: 6px; left: 40%; animation-duration: 12s; animation-delay: -8s;"></div>
+                <div class="particle" style="width: 3px; height: 3px; left: 50%; animation-duration: 18s; animation-delay: -4s;"></div>
+                <div class="particle" style="width: 5px; height: 5px; left: 60%; animation-duration: 14s; animation-delay: -10s; background-color: var(--secondary-glow);"></div>
+                <div class="particle" style="width: 2px; height: 2px; left: 70%; animation-duration: 22s; animation-delay: -1s;"></div>
+                <div class="particle" style="width: 4px; height: 4px; left: 80%; animation-duration: 16s; animation-delay: -6s;"></div>
+                <div class="particle" style="width: 6px; height: 6px; left: 90%; animation-duration: 11s; animation-delay: -3s;"></div>
+                <div class="particle" style="width: 3px; height: 3px; left: 15%; animation-duration: 19s; animation-delay: -7s; background-color: var(--secondary-glow);"></div>
+            </div>
+            <div class="relative z-10">
+                <h1 class="text-4xl md:text-7xl font-extrabold leading-tight mb-4 text-white">Revolución en Cada Lavado</h1>
+                <p class="text-lg md:text-xl mb-10 max-w-2xl mx-auto text-slate-400">La tecnología más avanzada para el cuidado impecable de tu ropa.</p>
+                <a href="#servicios" class="bg-white text-black px-8 py-4 rounded-lg font-bold text-lg shadow-2xl shadow-white/20 hover:scale-105 transition-transform duration-300 inline-block">Explorar Servicios</a>
+            </div>
+        </section>
+        
+        <section id="servicios" class="py-24">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-3 text-white">Un Ecosistema de Limpieza Total</h2>
+                <p class="text-lg text-slate-400 mb-16 max-w-2xl mx-auto">Diseñado para la eficiencia, la ecología y el control total.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="github-card">
+                        <i class="fas fa-bolt fa-3x mb-5" style="color:var(--primary-glow)"></i>
+                        <h3 class="text-xl font-bold mb-2 text-white">Rapidez y Eficiencia</h3>
+                        <p class="text-slate-400">Procesamos tus pedidos en tiempo récord para que tengas tu ropa lista cuando la necesites.</p>
+                    </div>
+                    <div class="github-card">
+                        <i class="fas fa-leaf fa-3x mb-5" style="color:var(--secondary-glow)"></i>
+                        <h3 class="text-xl font-bold mb-2 text-white">Cuidado Ecológico</h3>
+                        <p class="text-slate-400">Utilizamos productos biodegradables y procesos que cuidan el medio ambiente y tus prendas.</p>
+                    </div>
+                    <div class="github-card">
+                        <i class="fas fa-qrcode fa-3x mb-5 text-slate-300"></i>
+                        <h3 class="text-xl font-bold mb-2 text-white">Seguimiento Digital</h3>
+                        <p class="text-slate-400">Consulta el estado de tu pedido en cualquier momento con nuestro sistema de seguimiento por QR.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="como-funciona" class="py-24 bg-black/20">
+            <div class="container mx-auto px-6">
+                <div class="text-center">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-3 text-white">Nuestro Flujo de Trabajo: Simple en 3 Pasos</h2>
+                    <p class="text-lg text-slate-400 mb-20 max-w-2xl mx-auto">Un proceso simple, transparente y diseñado para ti.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="github-card flex flex-col items-center justify-start">
+                        <span class="text-5xl font-extrabold" style="color:var(--primary-glow)">1</span>
+                        <h3 class="text-xl font-bold mt-4 mb-2 text-white">Trae tu Ropa</h3>
+                        <p class="text-slate-400">Visítanos y entrega tus prendas. Te asignaremos un código de pedido único.</p>
+                    </div>
+                    <div class="github-card flex flex-col items-center justify-start">
+                        <span class="text-5xl font-extrabold" style="color:var(--primary-glow)">2</span>
+                        <h3 class="text-xl font-bold mt-4 mb-2 text-white">Lavado Profesional</h3>
+                        <p class="text-slate-400">Lavamos, secamos y doblamos tu ropa con la más alta tecnología y cuidado.</p>
+                    </div>
+                    <div class="github-card flex flex-col items-center justify-start">
+                        <span class="text-5xl font-extrabold" style="color:var(--primary-glow)">3</span>
+                        <h3 class="text-xl font-bold mt-4 mb-2 text-white">Recoge y Disfruta</h3>
+                        <p class="text-slate-400">Te notificaremos cuando tu pedido esté listo para que lo recojas fresco e impecable.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="testimonios" class="py-24">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-3 text-white">Lo que dicen nuestros clientes</h2>
+                <p class="text-lg text-slate-400 mb-16 max-w-2xl mx-auto">La confianza de nuestros clientes es nuestro mejor aval.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    
+                    <div class="github-card text-left">
+                        <i class="fas fa-quote-left text-3xl mb-4" style="color:var(--primary-glow)"></i>
+                        <p class="text-slate-300 italic">"¡Increíble servicio! Mi ropa nunca había vuelto tan limpia y bien doblada. El seguimiento por QR es un puntazo tecnológico. Totalmente recomendados."</p>
+                        <div class="flex items-center mt-6">
+                            <img class="w-12 h-12 rounded-full object-cover" src="https://i.pravatar.cc/150?img=1" alt="Avatar de cliente">
+                            <div class="ml-4">
+                                <p class="font-bold text-white">Carlos Mendoza</p>
+                                <p class="text-sm text-slate-400">Cliente Frecuente</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="github-card text-left">
+                        <i class="fas fa-quote-left text-3xl mb-4" style="color:var(--primary-glow)"></i>
+                        <p class="text-slate-300 italic">"La mejor lavandería de Cerro de Pasco, sin duda. Son rápidos, profesionales y el trato es excelente. Dejo mis prendas con total confianza."</p>
+                        <div class="flex items-center mt-6">
+                            <img class="w-12 h-12 rounded-full object-cover" src="https://i.pravatar.cc/150?img=2" alt="Avatar de cliente">
+                            <div class="ml-4">
+                                <p class="font-bold text-white">Sofía Rojas</p>
+                                <p class="text-sm text-slate-400">Cliente Satisfecha</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="github-card text-left">
+                        <i class="fas fa-quote-left text-3xl mb-4" style="color:var(--primary-glow)"></i>
+                        <p class="text-slate-300 italic">"Me encanta que usen productos ecológicos. Se nota la diferencia en la suavidad de la ropa. ¡Un servicio de 10 puntos, moderno y consciente!"</p>
+                        <div class="flex items-center mt-6">
+                            <img class="w-12 h-12 rounded-full object-cover" src="https://i.pravatar.cc/150?img=3" alt="Avatar de cliente">
+                            <div class="ml-4">
+                                <p class="font-bold text-white">Javier Torres</p>
+                                <p class="text-sm text-slate-400">Nuevo Cliente</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="faq" class="py-24 bg-black/20">
+            <div class="container mx-auto px-6">
+                <div class="text-center">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-3 text-white">Preguntas Frecuentes</h2>
+                    <p class="text-lg text-slate-400 mb-16 max-w-2xl mx-auto">Resolvemos tus dudas más comunes de forma clara y directa.</p>
+                </div>
+                <div class="max-w-3xl mx-auto space-y-4">
+                    
+                    <div class="faq-item border border-slate-700 rounded-lg">
+                        <button class="faq-question w-full flex justify-between items-center text-left p-5">
+                            <span class="text-lg font-semibold text-white">¿Cuánto tiempo tardan en entregar la ropa?</span>
+                            <i class="fas fa-chevron-down transition-transform duration-300 text-slate-400"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <p class="p-5 pt-0 text-slate-400">Normalmente, nuestro servicio estándar entrega la ropa en 24 horas. Ofrecemos también un servicio express con entrega en menos de 8 horas por un costo adicional.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item border border-slate-700 rounded-lg">
+                        <button class="faq-question w-full flex justify-between items-center text-left p-5">
+                            <span class="text-lg font-semibold text-white">¿Qué tipo de prendas puedo llevar?</span>
+                            <i class="fas fa-chevron-down transition-transform duration-300 text-slate-400"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <p class="p-5 pt-0 text-slate-400">Aceptamos casi todo tipo de prendas de uso diario, como ropa, sábanas, toallas y edredones. Para prendas delicadas como ternos, vestidos de gala o textiles especiales, por favor consulta directamente con nuestro personal.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item border border-slate-700 rounded-lg">
+                        <button class="faq-question w-full flex justify-between items-center text-left p-5">
+                            <span class="text-lg font-semibold text-white">¿Cómo funciona el seguimiento por QR?</span>
+                            <i class="fas fa-chevron-down transition-transform duration-300 text-slate-400"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <p class="p-5 pt-0 text-slate-400">Al dejar tu ropa, te asignamos un ticket con un código QR único. Puedes escanearlo con tu celular en cualquier momento para ver el estado de tu pedido en tiempo real: "Recibido", "En Proceso de Lavado", "Listo para Recoger".</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contacto" class="bg-black/30 pt-16 pb-8 border-t border-slate-300/10">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-white">Lavandería Moderna</h3>
+                    <p class="text-slate-400">Simplificando tu vida, una carga de ropa a la vez. Calidad y confianza en Cerro de Pasco.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4 text-white">Menú</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#servicios" class="text-slate-400 hover:text-white transition-colors">Servicios</a></li>
+                        <li><a href="#como-funciona" class="text-slate-400 hover:text-white transition-colors">Proceso</a></li>
+                        <li><a href="#testimonios" class="text-slate-400 hover:text-white transition-colors">Testimonios</a></li>
+                        <li><a href="#faq" class="text-slate-400 hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="{% url 'accounts:login' %}" class="text-slate-400 hover:text-white transition-colors">Acceso Clientes</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4 text-white">Contacto</h3>
+                    <ul class="space-y-2 text-slate-400">
+                        <li class="flex items-start"><i class="fas fa-map-marker-alt w-5 mt-1 mr-2 text-slate-500"></i><span>Jr. Ayacucho 123, Cerro de Pasco, Perú</span></li>
+                        <li class="flex items-start"><i class="fas fa-phone w-5 mt-1 mr-2 text-slate-500"></i><span>+51 987 654 321</span></li>
+                        <li class="flex items-start"><i class="fas fa-envelope w-5 mt-1 mr-2 text-slate-500"></i><span>contacto@lavanderiamoderna.com</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4 text-white">Síguenos</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-slate-400 hover:text-white text-2xl transform hover:scale-110 transition-transform"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-slate-400 hover:text-white text-2xl transform hover:scale-110 transition-transform"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-slate-400 hover:text-white text-2xl transform hover:scale-110 transition-transform"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-slate-700 text-center pt-6 text-sm text-slate-500">
+                &copy; {% now "Y" %} Lavandería Moderna. Todos los derechos reservados.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    document.querySelectorAll('.github-card').forEach(card => {
+        card.addEventListener('mousemove', e => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--mouse-x', `${x}px`);
+            card.style.setProperty('--mouse-y', `${y}px`);
+        });
+    });
+
+    function revealLoginButton() {
+        const secretButton = document.getElementById('secret-login-button');
+        if (secretButton && secretButton.classList.contains('is-hidden')) {
+            secretButton.classList.remove('is-hidden');
+            secretButton.style.animation = 'fadeIn 0.5s forwards';
+        }
+    }
+    const fadeInAnimation = `@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`;
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = fadeInAnimation;
+    document.head.appendChild(styleSheet);
+
+    (function() {
+        const secretCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let position = 0;
+        document.addEventListener('keydown', function(e) {
+            if (e.key === secretCode[position]) {
+                position++;
+            } else {
+                position = 0;
+            }
+            if (position === secretCode.length) {
+                revealLoginButton();
+                position = 0;
+            }
+        });
+    })();
+
+    (function() {
+        const tapTarget = document.getElementById('secret-tap-target');
+        if (!tapTarget) return;
+        const requiredTaps = 7;
+        let tapCount = 0;
+        let tapTimer;
+        tapTarget.addEventListener('click', function(e) {
+            e.preventDefault();
+            tapCount++;
+            if (tapCount === requiredTaps) {
+                revealLoginButton();
+                tapCount = 0;
+                clearTimeout(tapTimer);
+                return;
+            }
+            clearTimeout(tapTimer);
+            tapTimer = setTimeout(() => {
+                tapCount = 0;
+            }, 1500);
+        });
+    })();
+
+    document.querySelectorAll('.faq-question').forEach(button => {
+        button.addEventListener('click', () => {
+            const answer = button.nextElementSibling;
+            const icon = button.querySelector('i');
+
+            if (answer.style.maxHeight) {
+                answer.style.maxHeight = null;
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                answer.style.maxHeight = answer.scrollHeight + 'px';
+                icon.style.transform = 'rotate(180deg)';
+            } 
+        });
+    });
+    </script>
+</body>
+</html>

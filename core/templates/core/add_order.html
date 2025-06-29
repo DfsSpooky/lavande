@@ -1,0 +1,291 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Crear Nuevo Pedido{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--single { height: 2.625rem !important; border-color: #d1d5db !important; border-radius: 0.5rem !important; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 2.5rem !important; padding-left: 0.75rem !important; }
+    .modal.hidden { display: none; }
+</style>
+
+<div class="bg-white rounded-xl shadow-md max-w-4xl mx-auto">
+    <div class="p-6 border-b border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center"><i class="fas fa-shopping-cart mr-3 text-blue-600"></i> Crear Nuevo Pedido</h1>
+        <p class="text-sm text-gray-500 mt-1">Completa los detalles y añade los artículos del pedido.</p>
+    </div>
+
+    <form id="orderForm">
+        {% csrf_token %}
+        <input type="hidden" name="final_price_override" id="id_final_price_override">
+        
+        <div class="p-6 space-y-6">
+            <div id="form-errors" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                {% for field in order_form %}
+                <div class="{% if field.name == 'customer' or field.name == 'notes' %}md:col-span-2{% endif %}">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+                    {{ field }}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="border-t border-gray-200 pt-6">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Artículos del Pedido por Categoría</h2>
+                {{ formset.management_form }}
+                <div id="formset-container" class="space-y-4">
+                    {% for form in formset %}
+                    <div class="form-row flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        {{ form.id }}
+                        <div class="flex-grow"><label for="{{ form.category.id_for_label }}" class="text-xs text-gray-600 sr-only">Categoría</label>{{ form.category }}</div>
+                        <div class="w-24"><label for="{{ form.quantity.id_for_label }}" class="text-xs text-gray-600 sr-only">Cantidad</label>{{ form.quantity }}</div>
+                        <div class="pt-2">{% if form.instance.pk %}{{ form.DELETE }}{% endif %}<button type="button" class="remove-form-btn bg-red-100 text-red-600 px-3 py-2 rounded-lg hover:bg-red-200" title="Eliminar"><i class="fas fa-trash"></i></button></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div id="empty-form" class="hidden"><div class="form-row flex items-center gap-4 p-3 bg-gray-50 rounded-lg">{{ formset.empty_form.id }}<div class="flex-grow">{{ formset.empty_form.category }}</div><div class="w-24">{{ formset.empty_form.quantity }}</div><div class="pt-2"><button type="button" class="remove-form-btn bg-red-100 text-red-600 px-3 py-2 rounded-lg" title="Eliminar"><i class="fas fa-trash"></i></button></div></div></div>
+                <button type="button" id="add-form-btn" class="mt-4 bg-green-100 text-green-700 px-4 py-2 rounded-lg hover:bg-green-200 font-semibold text-sm flex items-center"><i class="fas fa-plus mr-2"></i> Agregar Artículo</button>
+            </div>
+        </div>
+        
+        <div class="p-6 bg-gray-50 rounded-b-xl mt-6">
+            <button type="button" id="submit-order-btn" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-bold text-base"><i class="fas fa-file-invoice-dollar mr-2"></i> Revisar y Pagar</button>
+        </div>
+    </form>
+</div>
+
+<!-- ============================================================================== -->
+<!-- MODALES REDISEÑADOS -->
+<!-- ============================================================================== -->
+
+<!-- Modal 1: Ajuste de Precio -->
+<div id="priceModal" class="modal fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 hidden z-40">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-md text-center p-8">
+        <div class="text-blue-500 mb-4"><i class="fas fa-calculator fa-4x"></i></div>
+        <h3 class="text-2xl font-bold text-gray-800">Confirmar Precio</h3>
+        <p class="text-gray-500 mt-2">Revisa el precio calculado y ajústalo si es necesario.</p>
+        
+        <div class="text-left my-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-500">Precio Calculado</label>
+                <p id="calculatedPrice" class="text-3xl font-bold text-gray-900">S/ 0.00</p>
+            </div>
+            
+            <!-- INICIO DEL CAMBIO -->
+            <div>
+                <label for="adjustedPriceInput" class="block text-sm font-medium text-gray-700">Ajustar Precio Final (Opcional)</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span class="text-gray-500 sm:text-sm">S/</span>
+                    </div>
+                    <input type="number" step="0.01" id="adjustedPriceInput" class="block w-full rounded-md border-gray-300 pl-8 pr-4 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-lg" placeholder="0.00">
+                </div>
+            </div>
+            <!-- FIN DEL CAMBIO -->
+
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+            <button type="button" onclick="closeModal('priceModal')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
+            <button type="button" id="confirmPriceBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-bold">Siguiente</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Registrar Pago -->
+<div id="paymentModal" class="modal fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+    <form id="paymentForm">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md p-8">
+            <div class="text-center">
+                <div class="text-green-500 mb-4"><i class="fas fa-money-check-alt fa-4x"></i></div>
+                <h3 class="text-2xl font-bold text-gray-800">Registrar Pago</h3>
+                <p class="text-sm font-medium text-gray-500 mt-2">Monto Total a Pagar</p>
+                <p id="paymentTotalPrice" class="text-4xl font-bold text-green-600 mb-6">S/ 0.00</p>
+            </div>
+
+            <div class="space-y-4 text-left">
+                <div>
+                    <label for="id_payment_status" class="block text-sm font-medium">Estado de Pago</label>
+                    <select name="payment_status" id="id_payment_status" onchange="togglePartialPayment()" class="mt-1"><option value="PAID">Pagado</option><option value="PARTIAL">Pago Parcial</option><option value="PENDING" selected>Dejar Pendiente</option></select>
+                </div>
+                <div id="partial-payment-div" class="hidden">
+                    <label for="id_partial_amount" class="block text-sm font-medium">Monto Pagado</label>
+                    <input type="number" step="0.01" name="partial_amount" id="id_partial_amount" placeholder="0.00" class="mt-1">
+                </div>
+                <div>
+                    <label for="id_payment_method" class="block text-sm font-medium">Método de Pago</label>
+                    <select name="payment_method" id="id_payment_method" class="mt-1"><option value="CASH">Efectivo</option><option value="YAPE">Yape</option><option value="PLIN">Plin</option></select>
+                </div>
+                <div>
+                    <label for="id_payment_proof" class="block text-sm font-medium">Comprobante (Opcional)</label>
+                    <input type="file" name="payment_proof" id="id_payment_proof" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-8">
+                <button type="button" onclick="closeModal('paymentModal'); openModal('priceModal');" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold">Atrás</button>
+                <button type="button" id="submitPaymentBtn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-bold">Finalizar y Guardar</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal 3: Éxito y Acciones Finales (Diseño de referencia) -->
+<div id="actionsModal" class="modal fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-md text-center p-8">
+        <div class="text-green-500 mb-4"><i class="fas fa-check-circle fa-5x"></i></div>
+        <h3 class="text-2xl font-bold">¡Pedido Guardado!</h3>
+        <p class="text-gray-500 mt-2 mb-6">El pedido <strong id="actions-order-code"></strong> ha sido guardado exitosamente.</p>
+        <div class="space-y-3">
+            <a id="print-ticket-btn" href="#" target="_blank" class="block w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-bold"><i class="fas fa-print mr-2"></i>Imprimir Ticket</a>
+            <button onclick="resetAndCreateNew()" class="block w-full bg-gray-600 text-white px-4 py-3 rounded-lg hover:bg-gray-700 font-bold"><i class="fas fa-plus-circle mr-2"></i>Crear Otro Pedido</button>
+            <a href="{% url 'dashboard' %}" class="block w-full bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold">Ir al Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+let currentOrderId = null; let currentOrderCode = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Aplicar estilos de Tailwind a los formularios
+    const tailwindClasses = 'block w-full px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm';
+    document.querySelectorAll('#orderForm select:not(.select2-hidden-accessible), #orderForm input, #orderForm textarea').forEach(el => {
+        if (el.type !== 'file' && !el.hasAttribute('readonly')) { el.classList.add(...tailwindClasses.split(' ')); }
+    });
+    document.querySelectorAll('#paymentForm select, #paymentForm input[type="number"]').forEach(el => {
+        el.classList.add(...tailwindClasses.split(' '));
+    });
+
+    $('#id_customer').select2({ placeholder: "Busca un cliente", allowClear: true, width: '100%' });
+
+    // Event listeners
+    document.getElementById('add-form-btn').addEventListener('click', addFormsetRow);
+    document.getElementById('formset-container').addEventListener('click', handleRemoveFormsetRow);
+    document.getElementById('submit-order-btn').addEventListener('click', handleProceedToPayment);
+    document.getElementById('confirmPriceBtn').addEventListener('click', handleCreateOrder);
+    document.getElementById('submitPaymentBtn').addEventListener('click', handleSubmitPayment);
+});
+
+function openModal(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
+function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+
+function addFormsetRow() {
+    const formsetContainer = document.getElementById('formset-container');
+    const totalFormsInput = document.getElementById('id_formset-TOTAL_FORMS');
+    const emptyFormTemplate = document.getElementById('empty-form').innerHTML;
+    const formIndex = parseInt(totalFormsInput.value);
+    const newFormHTML = emptyFormTemplate.replace(/__prefix__/g, formIndex);
+    const newFormNode = document.createElement('div');
+    newFormNode.innerHTML = newFormHTML;
+    newFormNode.querySelectorAll('select, input').forEach(el => el.classList.add('block', 'w-full', 'px-3', 'py-2', 'bg-white', 'border', 'border-gray-300', 'rounded-lg', 'shadow-sm'));
+    formsetContainer.appendChild(newFormNode.firstElementChild);
+    totalFormsInput.value = formIndex + 1;
+}
+
+function handleRemoveFormsetRow(e) {
+    const removeBtn = e.target.closest('.remove-form-btn');
+    if (removeBtn && document.getElementById('formset-container').children.length > 1) {
+        removeBtn.closest('.form-row').remove();
+    }
+}
+
+function calculateTotalPrice() {
+    let total = 0;
+    const weight = parseFloat(document.getElementById('id_weight').value) || 0;
+    const pricePerKg = parseFloat(document.getElementById('id_weight_price_per_kg').value) || 0;
+    if (weight > 0) total += weight * pricePerKg;
+    const CATEGORY_PRICES = JSON.parse('{{ category_prices_json|safe }}');
+    document.querySelectorAll('#formset-container .form-row').forEach(row => {
+        const categorySelect = row.querySelector('select[name$="-category"]');
+        const quantityInput = row.querySelector('input[name$="-quantity"]');
+        if (categorySelect?.value && quantityInput?.value > 0) {
+            total += parseFloat(CATEGORY_PRICES[categorySelect.value] || 0) * parseInt(quantityInput.value);
+        }
+    });
+    return total.toFixed(2);
+}
+
+function handleProceedToPayment() {
+    if (!document.getElementById('orderForm').checkValidity()) {
+        document.getElementById('orderForm').reportValidity();
+        return;
+    }
+    document.getElementById('calculatedPrice').textContent = `S/ ${calculateTotalPrice()}`;
+    openModal('priceModal');
+}
+
+async function handleCreateOrder() {
+    const btn = document.getElementById('confirmPriceBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+    document.getElementById('id_final_price_override').value = document.getElementById('adjustedPriceInput').value;
+    const formData = new FormData(document.getElementById('orderForm'));
+
+    try {
+        const response = await fetch("{% url 'add_order' %}", { method: 'POST', body: formData, headers: {'X-CSRFToken': '{{ csrf_token }}'} });
+        const data = await response.json();
+        if (data.success) {
+            currentOrderId = data.order_id;
+            currentOrderCode = data.order_code;
+            document.getElementById('paymentTotalPrice').textContent = `S/ ${parseFloat(data.total_price).toFixed(2)}`;
+            closeModal('priceModal');
+            openModal('paymentModal');
+        } else {
+            const errorDiv = document.getElementById('form-errors');
+            errorDiv.innerHTML = `<strong>Error:</strong> ${data.error}`;
+            if(data.details){
+                errorDiv.innerHTML += `<ul class="list-disc list-inside mt-2">${Object.entries(data.details).map(([key, val]) => `<li>${key}: ${val}</li>`).join('')}</ul>`;
+            }
+            errorDiv.classList.remove('hidden');
+            closeModal('priceModal');
+        }
+    } catch (error) { alert('Error de conexión al crear el pedido.'); }
+    finally { btn.disabled = false; btn.innerHTML = 'Siguiente'; }
+}
+
+async function handleSubmitPayment() {
+    const btn = document.getElementById('submitPaymentBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    const paymentFormData = new FormData(document.getElementById('paymentForm'));
+    paymentFormData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    try {
+        const response = await fetch(`/order/register_payment/${currentOrderId}/`, { method: 'POST', body: paymentFormData });
+        const data = await response.json();
+        if (data.success) {
+            showFinalActions(data.order_code);
+        } else { alert(`Error al registrar el pago: ${data.error}`); }
+    } catch(error) { alert('Error de conexión al registrar el pago.'); }
+    finally { btn.disabled = false; btn.innerHTML = 'Finalizar y Guardar'; }
+}
+
+function showFinalActions(orderCode) {
+    closeModal('paymentModal');
+    document.getElementById('actions-order-code').textContent = `#${orderCode || currentOrderCode}`;
+    document.getElementById('print-ticket-btn').href = `/order/ticket/${currentOrderId}/`;
+    openModal('actionsModal');
+}
+
+function resetAndCreateNew() {
+    closeModal('actionsModal');
+    window.location.reload(); // La forma más simple y robusta de empezar de nuevo.
+}
+
+function togglePartialPayment() {
+    const paymentStatus = document.getElementById('id_payment_status').value;
+    const partialDiv = document.getElementById('partial-payment-div');
+    if (paymentStatus === 'PARTIAL') {
+        partialDiv.classList.remove('hidden');
+    } else {
+        partialDiv.classList.add('hidden');
+        document.getElementById('id_partial_amount').value = '';
+    }
+}
+</script>
+{% endblock %}

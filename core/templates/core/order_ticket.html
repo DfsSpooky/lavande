@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Pedido #{{ order.order_code|default:order.id }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Estilos para una impresora de tickets de 80mm */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            width: 302px; /* Ancho para ticket de 80mm */
+            margin: 0 auto;
+        }
+        .ticket {
+            background-color: #fff;
+            padding: 20px;
+        }
+        .header, .footer {
+            text-align: center;
+        }
+        .item-list {
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            padding: 10px 0;
+            margin: 10px 0;
+        }
+        .item {
+            display: flex;
+            justify-content: space-between;
+        }
+        .total {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+        #qr-code {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .label-section {
+            border-top: 2px dashed #000;
+            margin-top: 25px;
+            padding-top: 15px;
+            text-align: center;
+        }
+        .no-print {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column; /* Apila los botones verticalmente */
+            gap: 8px; /* Espacio entre botones */
+        }
+        .no-print a, .no-print button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px; /* Espacio entre ícono y texto */
+        }
+
+        /* Estilos específicos para la impresión */
+        @media print {
+            body {
+                width: 100%; /* El navegador ajustará el ancho */
+            }
+            .no-print {
+                display: none;
+            }
+            .ticket {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-200">
+
+    <div class="ticket">
+        <div class="header">
+            <h1 class="text-xl font-bold">{{ app_config.business_name|default:'Mi Lavandería' }}</h1>
+            <p class="text-xs">{{ app_config.business_address|default:'Dirección no configurada' }}</p>
+            <p class="text-xs">Tel: {{ app_config.business_phone|default:'' }}</p>
+            <p class="text-sm font-semibold mt-2">Pedido: #{{ order.order_code|default:order.id }}</p>
+        </div>
+
+        <div class="mt-4 text-sm">
+            <p><strong>Fecha:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
+            <p><strong>Cliente:</strong> {{ order.customer.name }}</p>
+        </div>
+
+        <div class="item-list text-sm">
+            {% for item in order.items.all %}
+                <div class="item">
+                    <span>{{ item.quantity }} x {{ item.service.name }}</span>
+                    <span>S/ {{ item.subtotal|floatformat:2 }}</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="total text-base">
+            <span>TOTAL:</span>
+            <span>S/ {{ order.total_price|floatformat:2 }}</span>
+        </div>
+        
+        <div class="footer mt-4">
+            <p class="font-bold">¡Escanea para ver el estado!</p>
+            <div id="qr-code"></div>
+            <p class="text-xs mt-2">{{ qr_url }}</p>
+            <p class="text-xs mt-4">Gracias por tu preferencia.</p>
+        </div>
+
+        <div class="label-section">
+            <h2 class="font-bold text-lg">ETIQUETA PARA PRENDA</h2>
+            <p class="text-2xl font-bold my-2">#{{ order.order_code|default:order.id }}</p>
+            <p class="text-lg">{{ order.customer.name }}</p>
+        </div>
+    </div>
+    
+    <div class="no-print">
+        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        
+        {% if whatsapp_link %}
+            <a href="{{ whatsapp_link }}" 
+               target="_blank" 
+               class="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-green-600"
+               title="Enviar por WhatsApp al cliente">
+                <i class="fab fa-whatsapp"></i> Enviar
+            </a>
+        {% endif %}
+    </div>
+
+    <script type="text/javascript">
+        // Generar el código QR con la URL que pasamos desde la vista
+        new QRCode(document.getElementById("qr-code"), {
+            text: "{{ qr_url }}",
+            width: 128,
+            height: 128,
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    </script>
+</body>
+</html>

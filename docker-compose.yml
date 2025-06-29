@@ -1,0 +1,61 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=${DJANGO_DEBUG}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - DB_ENGINE=${DB_ENGINE}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT}
+      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE}
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - web
+    networks:
+      - app-network
+
+volumes:
+  staticfiles:
+  media:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

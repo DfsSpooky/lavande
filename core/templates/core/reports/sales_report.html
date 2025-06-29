@@ -1,0 +1,36 @@
+{% extends './report_base.html' %}
+
+{% block report_title %}Reporte de Ventas de Productos{% endblock %}
+{% block report_subtitle %}Analiza las ventas de productos de la tienda (no lavandería).{% endblock %}
+
+{% block report_content %}
+<div class="text-right mb-4">
+    <h3 class="text-xl font-semibold">Venta Total Filtrada: <span class="text-green-600">S/ {{ total_sales_amount|floatformat:2 }}</span></h3>
+</div>
+
+<div class="overflow-x-auto">
+    <table class="w-full text-sm text-left text-slate-500">
+        <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+            <tr>
+                <th class="px-6 py-3">ID Venta</th>
+                <th class="px-6 py-3">Fecha</th>
+                <th class="px-6 py-3">Items Vendidos</th>
+                <th class="px-6 py-3 text-right">Monto Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr class="bg-white border-b hover:bg-slate-50">
+                <td class="px-6 py-4 font-mono text-slate-800">#{{ sale.id }}</td>
+                <td class="px-6 py-4">{{ sale.created_at|date:"d M, Y" }}</td>
+                
+                <td class="px-6 py-4">{{ sale.saleitem_set.count }}</td>
+                <td class="px-6 py-4 text-right font-medium text-slate-700">S/ {{ sale.total_amount|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center py-10 text-slate-500">No hay ventas que coincidan con los filtros seleccionados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

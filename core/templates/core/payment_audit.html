@@ -1,0 +1,211 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Auditoría de Pagos{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">Auditoría de Pagos</h1>
+        <p class="text-gray-500 mt-1">Supervisa y gestiona el estado financiero de los pedidos.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+            <div class="bg-red-100 p-3 rounded-full">
+                <i class="fas fa-hand-holding-usd fa-2x text-red-600"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">Deuda Total Pendiente</h3>
+                <p class="text-2xl font-bold text-gray-800">S/ {{ total_due|floatformat:2 }}</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+            <div class="bg-green-100 p-3 rounded-full">
+                <i class="fas fa-sun fa-2x text-green-600"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">Ingresos del Día</h3>
+                <p class="text-2xl font-bold text-gray-800">S/ {{ today_income|floatformat:2 }}</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+            <div class="bg-yellow-100 p-3 rounded-full">
+                <i class="fas fa-hourglass-half fa-2x text-yellow-600"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">Pedidos con Deuda</h3>
+                <p class="text-2xl font-bold text-gray-800">{{ pending_payment_orders_count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-md">
+        <div class="p-4 border-b border-gray-200">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+                    <input type="date" name="date_from" class="input-style">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+                    <input type="date" name="date_to" class="input-style">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Estado de Pago</label>
+                    <select name="payment_status" class="input-style">
+                        <option value="">Todos</option>
+                        <option value="PENDING">Pendiente</option>
+                        <option value="PARTIAL">Parcial</option>
+                        <option value="PAID">Pagado</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold">
+                    <i class="fas fa-filter mr-2"></i>Filtrar
+                </button>
+            </form>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3">ID</th>
+                        <th class="px-6 py-3">Cliente</th>
+                        <th class="px-6 py-3">Estado de Pago</th>
+                        <th class="px-6 py-3">Total</th>
+                        <th class="px-6 py-3 text-red-600">Falta Pagar</th>
+                        <th class="px-6 py-3 hidden md:table-cell">Fecha</th>
+                        <th class="px-6 py-3 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">#{{ order.id }}</td>
+                        <td class="px-6 py-4">{{ order.customer.name }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if order.payment_status == 'PAID' %} bg-green-100 text-green-800 
+                                {% elif order.payment_status == 'PARTIAL' %} bg-yellow-100 text-yellow-800 
+                                {% else %} bg-red-100 text-red-800 {% endif %}">
+                                {{ order.get_payment_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">S/{{ order.total_price|floatformat:2 }}</td>
+                        <td class="px-6 py-4 font-bold text-red-600">S/{{ order.remaining_amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4 hidden md:table-cell">{{ order.created_at|date:"d M, Y" }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="relative inline-block text-left">
+                                <button type="button" class="inline-flex items-center justify-center p-2 rounded-full text-gray-500 hover:bg-gray-100 focus:outline-none action-menu-button">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10 action-menu">
+                                    <div class="py-1" role="menu">
+                                        {% if order.payment_status != 'PAID' %}
+                                        <button type="button" onclick="openPaymentModal(this)"
+                                            data-form-action="{% url 'update_payment_status' order.id %}"
+                                            data-csrf="{{ csrf_token }}"
+                                            data-payment-status="{{ order.payment_status }}"
+                                            data-partial-amount="{{ order.partial_amount|floatformat:2 }}"
+                                            class="w-full text-left text-green-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">
+                                            <i class="fas fa-money-bill-wave w-5 mr-2"></i>Actualizar Pago
+                                        </button>
+                                        {% endif %}
+                                        <a href="{% url 'edit_order' order.id %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem"><i class="fas fa-edit w-5 mr-2"></i>Ver/Editar Pedido</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center py-10 text-gray-500">No se encontraron pedidos.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if orders.has_other_pages %}
+        <div class="p-4 border-t border-gray-200 flex items-center justify-between">
+            <span class="text-sm text-gray-600">Página {{ orders.number }} de {{ orders.paginator.num_pages }}</span>
+            <div class="flex space-x-1">
+                {% if orders.has_previous %}
+                    <a href="?page={{ orders.previous_page_number }}" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Anterior</a>
+                {% endif %}
+                {% if orders.has_next %}
+                    <a href="?page={{ orders.next_page_number }}" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Siguiente</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="paymentModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-md">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="text-xl font-semibold">Actualizar Estado de Pago</h3>
+            <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        <form id="paymentModalForm" method="post" enctype="multipart/form-data" class="p-6 space-y-4">
+            <input type="hidden" name="csrfmiddlewaretoken" id="modalCsrfToken">
+            <div>
+                <label for="payment_status" class="block text-sm font-medium text-gray-700">Nuevo Estado</label>
+                <select name="payment_status" id="modalPaymentStatus" class="input-style mt-1"></select>
+            </div>
+            <div>
+                <label for="partial_amount" class="block text-sm font-medium text-gray-700">Monto Parcial</label>
+                <input type="number" name="partial_amount" id="modalPartialAmount" step="0.01" class="input-style mt-1">
+            </div>
+            <div>
+                <label for="payment_proof" class="block text-sm font-medium text-gray-700">Comprobante</label>
+                <input type="file" name="payment_proof" class="input-file-style mt-1">
+            </div>
+            <div class="pt-4 flex justify-end space-x-3">
+                <button type="button" onclick="closePaymentModal()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// --- Script para aplicar estilos ---
+document.addEventListener('DOMContentLoaded', function() {
+    const baseClasses = 'block w-full px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm';
+    document.querySelectorAll('.input-style').forEach(el => el.classList.add(...baseClasses.split(' ')));
+    document.querySelectorAll('.input-file-style').forEach(el => el.classList.add(...'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100'.split(' ')));
+});
+
+// --- Script para el menú de acciones ---
+document.addEventListener('click', (e) => {
+    const isActionButton = e.target.closest('.action-menu-button');
+    if (!isActionButton) {
+        document.querySelectorAll('.action-menu').forEach(menu => menu.classList.add('hidden'));
+    } else {
+        const menu = isActionButton.nextElementSibling;
+        const isHidden = menu.classList.contains('hidden');
+        document.querySelectorAll('.action-menu').forEach(m => m.classList.add('hidden'));
+        if (isHidden) menu.classList.remove('hidden');
+    }
+});
+
+// --- Scripts para el Modal de Pago ---
+const paymentModal = document.getElementById('paymentModal');
+const paymentModalForm = document.getElementById('paymentModalForm');
+const modalCsrfToken = document.getElementById('modalCsrfToken');
+const modalPaymentStatus = document.getElementById('modalPaymentStatus');
+const modalPartialAmount = document.getElementById('modalPartialAmount');
+
+function openPaymentModal(button) {
+    paymentModalForm.action = button.dataset.formAction;
+    modalCsrfToken.value = button.dataset.csrf;
+    modalPaymentStatus.value = button.dataset.paymentStatus;
+    modalPartialAmount.value = button.dataset.partialAmount;
+    paymentModal.classList.remove('hidden');
+}
+
+function closePaymentModal() {
+    paymentModal.classList.add('hidden');
+}
+</script>
+{% endblock %}

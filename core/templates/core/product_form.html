@@ -1,0 +1,37 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-md max-w-lg mx-auto">
+    <div class="p-6 border-b border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-box mr-3 text-blue-600"></i> {{ title }}
+        </h1>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="p-6 space-y-5">
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
+            <a href="{% url 'product_list' %}" class="text-sm text-gray-600 hover:underline">Cancelar</a>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-bold flex items-center transition-colors duration-200">
+                <i class="fas fa-save mr-2"></i> Guardar Producto
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{# core/templates/core/sale_ticket.html #}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Venta #{{ sale.id }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos para una impresora de tickets de 80mm */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            width: 302px; /* Ancho para ticket de 80mm */
+            margin: 0 auto;
+        }
+        .ticket {
+            background-color: #fff;
+            padding: 20px;
+        }
+        .header, .footer {
+            text-align: center;
+        }
+        .item-list {
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            padding: 10px 0;
+            margin: 10px 0;
+        }
+        .item {
+            display: flex;
+            justify-content: space-between;
+        }
+        .item-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .total {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+        .no-print {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .no-print a, .no-print button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* Estilos específicos para la impresión */
+        @media print {
+            body {
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+            .ticket {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-200">
+
+    <div class="ticket">
+        <div class="header">
+            <h1 class="text-xl font-bold">{{ app_config.business_name|default:'Mi Lavandería' }}</h1>
+            <p class="text-xs">{{ app_config.business_address|default:'Dirección no configurada' }}</p>
+            <p class="text-xs">Tel: {{ app_config.business_phone|default:'' }}</p>
+            <p class="text-sm font-semibold mt-2">TICKET DE VENTA: #{{ sale.id }}</p>
+        </div>
+
+        <div class="mt-4 text-sm">
+            <p><strong>Fecha:</strong> {{ sale.created_at|date:"d/m/Y H:i" }}</p>
+            <p><strong>Cliente:</strong> {{ sale.customer.name|default:'Venta de Mostrador' }}</p>
+        </div>
+
+        <div class="item-list text-sm">
+            <div class="item item-header">
+                <span>Producto</span>
+                <span>Subtotal</span>
+            </div>
+            {% for item in sale.saleitem_set.all %}
+                <div class="item">
+                    <span>{{ item.quantity }}x {{ item.product.name }}</span>
+                    <span>S/ {{ item.unit_price|floatformat:2 }}</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="total text-base">
+            <span>TOTAL:</span>
+            <span>S/ {{ sale.total_amount|floatformat:2 }}</span>
+        </div>
+        
+        <div class="footer mt-4">
+            <p class="text-xs mt-4">Gracias por su compra.</p>
+        </div>
+    </div>
+    
+    <div class="no-print">
+        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        
+        {% if whatsapp_link %}
+            <a href="{{ whatsapp_link }}" 
+               target="_blank" 
+               class="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-green-600"
+               title="Enviar por WhatsApp al cliente">
+                <i class="fab fa-whatsapp"></i> Enviar
+            </a>
+        {% endif %}
+    </div>
+
+</body>
+</html>

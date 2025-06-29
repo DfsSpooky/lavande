@@ -1,0 +1,131 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Clientes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Gestión de Clientes</h1>
+            <p class="text-slate-500 mt-1">Busca, analiza y gestiona toda tu clientela.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'export_customers_csv' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center shadow-sm">
+                <i class="fas fa-file-excel mr-2"></i> Exportar a Excel
+            </a>
+            <a href="{% url 'add_customer' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center shadow-sm">
+                <i class="fas fa-user-plus mr-2"></i> Añadir Cliente
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Resumen Rápido -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
+            <h3 class="text-sm font-medium text-slate-500">Clientes Nuevos (Este Mes)</h3>
+            <p class="mt-2 text-3xl font-bold text-slate-800">{{ new_customers_this_month }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-green-500">
+            <h3 class="text-sm font-medium text-slate-500">Clientes Activos (Últimos 30 días)</h3>
+            <p class="mt-2 text-3xl font-bold text-slate-800">{{ active_customers }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-red-500">
+            <h3 class="text-sm font-medium text-slate-500">Clientes Inactivos (>90 días)</h3>
+            <p class="mt-2 text-3xl font-bold text-slate-800">{{ inactive_customers_count }}</p>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-md">
+        <div class="p-6">
+            <!-- Formulario de Filtros Avanzados -->
+            <form method="get" class="mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                    <div class="lg:col-span-2">{{ customer_filter_form.search_query }}</div>
+                    <div>{{ customer_filter_form.order_status }}</div>
+                    <div>{{ customer_filter_form.payment_status }}</div>
+                </div>
+                <div class="flex items-center gap-3 mt-4">
+                    <button type="submit" class="bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-800 flex items-center justify-center">
+                        <i class="fas fa-filter mr-2"></i> Filtrar
+                    </button>
+                    {% if request.GET.search_query or request.GET.order_status or request.GET.payment_status %}
+                    <a href="{% url 'customer_list' %}" class="text-slate-600 hover:text-slate-900 text-sm font-medium">Limpiar filtros</a>
+                    {% endif %}
+                </div>
+            </form>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-500">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Nombre del Cliente</th>
+                            <th scope="col" class="px-6 py-3">Contacto</th>
+                            <th scope="col" class="px-6 py-3">Total Gastado</th>
+                            <th scope="col" class="px-6 py-3">Último Pedido</th>
+                            <th scope="col" class="px-6 py-3 text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                        <tr class="bg-white border-b hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">
+                                <div class="flex items-center gap-3">
+                                    <!-- Indicadores Visuales -->
+                                    {% if customer.is_top %}<i class="fas fa-star text-yellow-400" title="Cliente Top"></i>{% endif %}
+                                    {% if customer.is_inactive %}<i class="fas fa-circle text-red-500 text-xs" title="Cliente Inactivo"></i>{% endif %}
+                                    <span>{{ customer.name }}</span>
+                                    {% if customer.is_new %}<span class="text-xs bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-full">Nuevo</span>{% endif %}
+                                </div>
+                                <div class="text-xs text-slate-400">#{{ customer.customer_code }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">
+                                <div>{{ customer.phone|default:"Sin teléfono" }}</div>
+                                <div class="text-xs">{{ customer.email|default:"Sin email" }}</div>
+                            </td>
+                            <td class="px-6 py-4 font-semibold text-slate-700">S/ {{ customer.total_spent|floatformat:2 }}</td>
+                            <td class="px-6 py-4">{{ customer.latest_order_date|date:"d M, Y"|default:"Sin pedidos" }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <a href="{% url 'manage_customer_orders' customer.customer_code %}" class="font-medium text-blue-600 hover:underline">Gestionar</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-10 text-slate-500">
+                                <p class="font-semibold">No se encontraron clientes</p>
+                                <p class="text-sm">Intenta ajustar los filtros o añade un nuevo cliente.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <nav class="flex justify-between items-center mt-6" aria-label="Paginación">
+                <div class="text-sm text-slate-500">
+                    Mostrando <span class="font-semibold">{{ customers.start_index }}</span> a <span class="font-semibold">{{ customers.end_index }}</span> de <span class="font-semibold">{{ customers.paginator.count }}</span> clientes
+                </div>
+                <div>
+                    {% if customers.has_previous %}
+                        <a href="?page={{ customers.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">Anterior</a>
+                    {% endif %}
+                    {% if customers.has_next %}
+                        <a href="?page={{ customers.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">Siguiente</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tailwindClasses = 'block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm';
+    const formElements = document.querySelectorAll('form input:not([type="file"]):not([type="hidden"]), form select, form textarea');
+    formElements.forEach(el => {
+        el.classList.add(...tailwindClasses.split(' '));
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEÑAL PERDIDA</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* Fuente de terminal retro y fondo oscuro */
+        body {
+            background-color: #1a1a1a;
+            font-family: 'Courier New', Courier, monospace;
+            color: #39ff14; /* Verde fósforo */
+        }
+        
+        /* Efecto de escaneo en la pantalla */
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(57, 255, 20, 0.3);
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        /* Animación para el texto que se "escribe" solo */
+        .typed-text {
+            overflow: hidden;
+            border-right: .15em solid #39ff14; /* El cursor que parpadea */
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: .15em;
+            animation: 
+                typing 3.5s steps(40, end),
+                blink-caret .75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #39ff14; }
+        }
+        
+        /* Brillo para los botones */
+        .neon-button {
+            box-shadow: 0 0 5px #39ff14, 0 0 15px #39ff14, 0 0 25px #39ff14;
+            border-color: #39ff14;
+            transition: all 0.2s ease-in-out;
+        }
+        .neon-button:hover {
+            box-shadow: 0 0 10px #39ff14, 0 0 30px #39ff14, 0 0 50px #39ff14;
+            color: #1a1a1a;
+            background-color: #39ff14;
+        }
+    </style>
+</head>
+<body class="relative overflow-hidden">
+    <div class="scanline"></div>
+
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="text-center p-8 w-full max-w-4xl mx-auto">
+            
+            <div class="mb-8 text-8xl text-red-500">
+                <i class="fas fa-satellite-dish animate-pulse"></i>
+            </div>
+
+            <h1 class="text-3xl md:text-4xl font-bold mb-4 typed-text">
+                > MISIÓN FALLIDA: SEÑAL PERDIDA
+            </h1>
+
+            <div class="text-lg mt-8 space-y-4">
+                <p>> AGENTE, LA INTELIGENCIA SOBRE SU PEDIDO NO PUDO SER RECUPERADA.</p>
+                <p>> EL CÓDIGO DE SEGUIMIENTO PROPORCIONADO NO CORRESPONDE A NINGÚN ACTIVO EN NUESTRA RED.</p>
+                <p>> POSIBLE INTERFERENCIA O CÓDIGO INCORRECTO.</p>
+            </div>
+            
+            <div class="mt-12">
+                <p class="mb-4">> INICIAR PROTOCOLO DE EXTRACCIÓN:</p>
+                <a href="{% url 'home' %}" 
+                   class="inline-block border-2 font-bold text-lg px-8 py-4 rounded-md neon-button">
+                    <i class="fas fa-undo mr-3"></i>
+                    REGRESAR A LA BASE
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

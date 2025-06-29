@@ -1,0 +1,38 @@
+{% extends './report_base.html' %}
+
+{% block report_title %}Reporte de Pedidos{% endblock %}
+{% block report_subtitle %}Analiza todos los pedidos de lavandería por cliente, fecha y estado.{% endblock %}
+
+{% block report_content %}
+<div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+    <h3 class="text-lg font-semibold">Total de Pedidos Encontrados: <span class="text-blue-600">{{ total_orders }}</span></h3>
+    <h3 class="text-lg font-semibold">Monto Total de Pedidos: <span class="text-green-600">S/ {{ total_amount|floatformat:2 }}</span></h3>
+</div>
+
+<div class="overflow-x-auto">
+    <table class="w-full text-sm text-left text-slate-500">
+        <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+            <tr>
+                <th class="px-6 py-3">Pedido</th>
+                <th class="px-6 py-3">Cliente</th>
+                <th class="px-6 py-3">Fecha</th>
+                <th class="px-6 py-3">Estado</th>
+                <th class="px-6 py-3 text-right">Monto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr class="bg-white border-b hover:bg-slate-50">
+                <td class="px-6 py-4 font-mono text-slate-800">#{{ order.order_code }}</td>
+                <td class="px-6 py-4">{{ order.customer.name }}</td>
+                <td class="px-6 py-4">{{ order.created_at|date:"d M, Y" }}</td>
+                <td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if order.status == 'PROCESSING' %} bg-yellow-100 text-yellow-800 {% elif order.status == 'READY' %} bg-green-100 text-green-800 {% elif order.status == 'DELIVERED' %} bg-blue-100 text-blue-800 {% else %} bg-gray-100 text-gray-800 {% endif %}">{{ order.get_status_display }}</span></td>
+                <td class="px-6 py-4 text-right font-medium text-slate-700">S/ {{ order.total_price|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center py-10 text-slate-500">No hay pedidos que coincidan con los filtros seleccionados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

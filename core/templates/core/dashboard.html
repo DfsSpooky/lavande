@@ -1,0 +1,99 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Accesos Rápidos</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <a href="{% url 'add_order' %}" class="flex flex-col items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200">
+                <i class="fas fa-plus-circle fa-2x text-blue-600 mb-2"></i>
+                <span class="text-sm font-medium text-blue-800 text-center">Nuevo Pedido</span>
+            </a>
+            <a href="{% url 'add_customer' %}" class="flex flex-col items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200">
+                <i class="fas fa-user-plus fa-2x text-green-600 mb-2"></i>
+                <span class="text-sm font-medium text-green-800 text-center">Añadir Cliente</span>
+            </a>
+
+            <a href="{% url 'sales_history' %}" class="flex flex-col items-center justify-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200">
+                <i class="fas fa-history fa-2x text-purple-600 mb-2"></i>
+                <span class="text-sm font-medium text-purple-800 text-center">Historial Ventas</span>
+            </a>
+            <a href="{% url 'payment_audit' %}" class="flex flex-col items-center justify-center p-4 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-200">
+                <i class="fas fa-wallet fa-2x text-red-600 mb-2"></i>
+                <span class="text-sm font-medium text-red-800 text-center">Auditar Pagos</span>
+            </a>
+        </div>
+    </div>
+
+    <div>
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Resumen de Ingresos</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                <div class="bg-blue-100 p-3 rounded-full"><i class="fas fa-sun fa-2x text-blue-600"></i></div>
+                <div><h3 class="text-sm font-medium text-gray-500">Ingresos Diarios</h3><p class="text-2xl font-bold text-gray-800">S/ {{ daily_income|floatformat:2 }}</p></div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                <div class="bg-green-100 p-3 rounded-full"><i class="fas fa-calendar-week fa-2x text-green-600"></i></div>
+                <div><h3 class="text-sm font-medium text-gray-500">Ingresos Semanales</h3><p class="text-2xl font-bold text-gray-800">S/ {{ weekly_income|floatformat:2 }}</p></div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                <div class="bg-yellow-100 p-3 rounded-full"><i class="fas fa-calendar-alt fa-2x text-yellow-600"></i></div>
+                <div><h3 class="text-sm font-medium text-gray-500">Ingresos Mensuales</h3><p class="text-2xl font-bold text-gray-800">S/ {{ monthly_income|floatformat:2 }}</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Resumen de Pedidos por Estado</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-blue-50 p-6 rounded-xl shadow-sm"><h3 class="text-sm font-medium text-gray-500">En Proceso</h3><p class="text-2xl font-bold text-blue-800">{{ orders_processing_count }}</p></div>
+            <div class="bg-green-50 p-6 rounded-xl shadow-sm"><h3 class="text-sm font-medium text-gray-500">Listos para Recoger</h3><p class="text-2xl font-bold text-green-800">{{ orders_completed_count }}</p></div>
+            <div class="bg-yellow-50 p-6 rounded-xl shadow-sm"><h3 class="text-sm font-medium text-gray-500">Pago Pendiente/Parcial</h3><p class="text-2xl font-bold text-yellow-800">{{ orders_payment_pending_count }}</p></div>
+            <div class="bg-gray-50 p-6 rounded-xl shadow-sm"><h3 class="text-sm font-medium text-gray-500">Total de Pedidos</h3><p class="text-2xl font-bold text-gray-800">{{ orders_total_count }}</p></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-md">
+            <div class="p-6 border-b"><h2 class="text-xl font-semibold text-gray-700 flex items-center"><i class="fas fa-crown text-yellow-500 mr-3"></i> Top 5 Clientes</h2></div>
+            <div class="p-6"><ul class="space-y-4">{% for customer in top_customers %}<li class="flex items-center justify-between"><div><p class="font-semibold text-gray-800">{{ customer.name }}</p><p class="text-sm text-gray-500">Código: {{ customer.customer_code }}</p></div><span class="font-bold text-green-600">S/ {{ customer.total_spent|floatformat:2 }}</span></li>{% empty %}<li class="text-center py-4 text-gray-500">Aún no hay datos de clientes para mostrar.</li>{% endfor %}</ul></div>
+        </div>
+        <div class="bg-white rounded-xl shadow-md">
+            <div class="p-6 border-b"><h2 class="text-xl font-semibold text-red-600 flex items-center"><i class="fas fa-exclamation-triangle mr-3"></i> Pedidos que Requieren Atención</h2></div>
+            <div class="p-6"><ul class="space-y-3">{% for order in attention_orders %}<li class="flex items-center justify-between p-3 bg-red-50 rounded-lg"><div><p class="font-semibold text-gray-900">Pedido #{{ order.order_code }}</p><p class="text-sm text-gray-600">{{ order.customer.name }}</p></div><div class="text-right"><p class="text-sm text-red-700 font-bold">{{ order.created_at|timesince }} en proceso</p><a href="{% url 'edit_order' order.id %}" class="text-sm text-blue-600 hover:underline">Ver Pedido</a></div></li>{% empty %}<li class="text-center py-4 text-gray-500">¡Genial! No hay pedidos retrasados.</li>{% endfor %}</ul></div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-md">
+        <div class="p-6 border-b border-gray-200"><h2 class="text-xl font-semibold text-gray-700">Últimos Pedidos</h2></div>
+        <div class="p-6">
+            <form method="get" class="mb-6"><div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end"><div><label for="{{ order_filter_form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>{{ order_filter_form.status }}</div><div><label for="{{ order_filter_form.payment_status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Pago</label>{{ order_filter_form.payment_status }}</div><div><label for="{{ order_filter_form.date_from.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Desde</label>{{ order_filter_form.date_from }}</div><div><label for="{{ order_filter_form.date_to.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>{{ order_filter_form.date_to }}</div><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center"><i class="fas fa-filter mr-2"></i> Filtrar</button>{% if request.GET.status or request.GET.payment_status or request.GET.date_from or request.GET.date_to %}<a href="{% url 'dashboard' %}" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 flex items-center justify-center"><i class="fas fa-times mr-2"></i> Limpiar Filtros</a>{% endif %}</div></form>
+            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3">ID</th><th scope="col" class="px-6 py-3">Cliente</th><th scope="col" class="px-6 py-3 hidden sm:table-cell">Estado</th><th scope="col" class="px-6 py-3 hidden lg:table-cell">Total</th><th scope="col" class="px-6 py-3 hidden lg:table-cell">Pago</th><th scope="col" class="px-6 py-3 hidden xl:table-cell">Falta Pagar</th><th scope="col" class="px-6 py-3 hidden sm:table-cell">Creado</th><th scope="col" class="px-6 py-3 text-center">Acciones</th><th scope="col" class="px-6 py-3 text-center">Ticket</th></tr></thead><tbody>{% for order in orders %}<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">#{{ order.id }}</td><td class="px-6 py-4">{{ order.customer.name }}</td><td class="px-6 py-4 hidden sm:table-cell"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if order.status == 'COMPLETED' %} bg-green-100 text-green-800 {% elif order.status == 'PROCESSING' %} bg-yellow-100 text-yellow-800 {% elif order.status == 'CANCELLED' %} bg-red-100 text-red-800 {% else %} bg-gray-100 text-gray-800 {% endif %}">{{ order.get_status_display }}</span></td><td class="px-6 py-4 hidden lg:table-cell">S/{{ order.total_price|floatformat:2 }}</td><td class="px-6 py-4 hidden lg:table-cell"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if order.payment_status == 'PAID' %} bg-green-100 text-green-800 {% elif order.payment_status == 'PARTIAL' %} bg-orange-100 text-orange-800 {% elif order.payment_status == 'PENDING' %} bg-red-100 text-red-800 {% else %} bg-gray-100 text-gray-800 {% endif %}">{{ order.get_payment_status_display }}</span></td><td class="px-6 py-4 hidden xl:table-cell text-red-600 font-semibold">S/{{ order.remaining_amount|floatformat:2 }}</td><td class="px-6 py-4 hidden sm:table-cell">{{ order.created_at|date:"d/m/Y" }}</td><td class="px-6 py-4 text-center"><div class="relative inline-block text-left"><button type="button" class="inline-flex items-center justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none action-menu-button">Acciones <i class="fas fa-chevron-down -mr-1 ml-2 h-5 w-5"></i></button><div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10 action-menu"><div class="py-1" role="menu" aria-orientation="vertical"><a href="{% url 'edit_order' order.id %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem"><i class="fas fa-edit w-5 mr-2"></i>Editar Pedido</a><a href="{% url 'download_order_pdf' order.id %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem"><i class="fas fa-file-pdf w-5 mr-2"></i>Descargar PDF</a></div></div></div></td><td class="px-6 py-4 text-center"><a href="{% url 'print_order_ticket' order.id %}" target="_blank" class="text-gray-600 hover:text-blue-800" title="Imprimir Ticket"><i class="fas fa-print fa-lg"></i></a></td></tr>{% empty %}<tr><td colspan="9" class="text-center py-10 text-gray-500">No se encontraron pedidos.</td></tr>{% endfor %}</tbody></table></div>
+            <nav class="flex justify-center items-center space-x-2 mt-4" aria-label="Paginación de Pedidos">{% if orders.has_previous %}<a href="?page_orders={{ orders.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page_orders' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Anterior</a>{% else %}<span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed">Anterior</span>{% endif %}<span class="px-4 py-2 text-sm font-medium text-gray-700">Página {{ orders.number }} de {{ orders.paginator.num_pages }}</span>{% if orders.has_next %}<a href="?page_orders={{ orders.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page_orders' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Siguiente</a>{% else %}<span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed">Siguiente</span>{% endif %}</nav>
+        </div>
+    </div>
+</div>
+
+<script>
+const actionMenuButtons = document.querySelectorAll('.action-menu-button');
+function closeAllActionMenus() {document.querySelectorAll('.action-menu').forEach(menu => {menu.classList.add('hidden');});}
+actionMenuButtons.forEach(button => {button.addEventListener('click', (event) => {event.stopPropagation();const menu = button.nextElementSibling;const isHidden = menu.classList.contains('hidden');closeAllActionMenus();if (isHidden) {menu.classList.remove('hidden');}});});
+document.addEventListener('click', () => {closeAllActionMenus();});
+document.addEventListener('DOMContentLoaded', function() {
+    const tailwindClasses = 'block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm';
+    const formElements = document.querySelectorAll('form input:not([type="file"]):not([type="hidden"]), form select, form textarea');
+    formElements.forEach(el => {el.classList.add(...tailwindClasses.split(' '));});
+    const dateInputFrom = document.getElementById('id_date_from');
+    if (dateInputFrom) {dateInputFrom.setAttribute('type', 'date');}
+    const dateInputTo = document.getElementById('id_date_to');
+    if (dateInputTo) {dateInputTo.setAttribute('type', 'date');}
+});
+</script>
+{% endblock %}

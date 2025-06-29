@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Iniciar Sesión | Lavandería Moderna{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --primary-glow: #22a0f1;
+            --secondary-glow: #7877f4;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: #e6edf3;
+            overflow-x: hidden;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+        }
+        
+        .particle {
+            position: absolute;
+            bottom: -20px;
+            background-color: var(--primary-glow);
+            border-radius: 50%;
+            animation: float linear infinite;
+        }
+
+        .github-card {
+            background-color: rgba(22, 27, 34, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2.5rem; /* Aumentamos el padding para más espacio */
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px); /* Efecto de vidrio más pronunciado */
+        }
+    </style>
+</head>
+<body class="antialiased">
+    
+    <div id="particle-container" class="fixed inset-0 z-0">
+        <div class="particle" style="width: 5px; height: 5px; left: 10%; animation-duration: 15s; animation-delay: -2s;"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 20%; animation-duration: 10s; animation-delay: -5s; background-color: var(--secondary-glow);"></div>
+        <div class="particle" style="width: 4px; height: 4px; left: 30%; animation-duration: 20s; animation-delay: 0s;"></div>
+        <div class="particle" style="width: 6px; height: 6px; left: 40%; animation-duration: 12s; animation-delay: -8s;"></div>
+        <div class="particle" style="width: 3px; height: 3px; left: 50%; animation-duration: 18s; animation-delay: -4s;"></div>
+        <div class="particle" style="width: 5px; height: 5px; left: 60%; animation-duration: 14s; animation-delay: -10s; background-color: var(--secondary-glow);"></div>
+        <div class="particle" style="width: 2px; height: 2px; left: 70%; animation-duration: 22s; animation-delay: -1s;"></div>
+    </div>
+
+    <div class="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+        
+        <div class="github-card max-w-md w-full space-y-8">
+            
+            <div class="text-center">
+                <a href="/" class="inline-block">
+                    <i class="fas fa-atom text-5xl fa-spin" style="color:var(--primary-glow); --fa-animation-duration: 10s;"></i>
+                </a>
+                <h2 class="mt-4 text-3xl font-bold text-white">
+                    Accede a tu Cuenta
+                </h2>
+                <p class="mt-2 text-sm text-slate-400">
+                    Bienvenido de nuevo a Lavandería Moderna.
+                </p>
+            </div>
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="bg-red-900/50 text-red-300 p-3 rounded-lg border border-red-500/30 text-sm">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="space-y-4">
+                    {% for field in form.visible_fields %}
+                    <div class="relative">
+                        <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }}</label>
+                        
+                        {% if field.name == 'username' %}
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-user text-slate-400"></i>
+                            </span>
+                        {% endif %}
+                        {% if field.name == 'password' %}
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-slate-400"></i>
+                            </span>
+                        {% endif %}
+
+                        {{ field }}
+                    </div>
+                    {% if field.errors %}
+                        <p class="text-red-400 text-xs pt-1 pl-1">{{ field.errors|first }}</p>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="flex items-center justify-end">
+                    <div class="text-sm">
+                        <a href="#" class="font-medium hover:underline" style="color: var(--primary-glow)">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 text-sm font-bold rounded-lg text-black bg-white shadow-lg shadow-white/20 hover:scale-105 transition-all duration-300">
+                        Iniciar Sesión
+                    </button>
+                </div>
+            </form>
+            
+            <div class="text-center text-sm text-slate-400">
+                <p>
+                    <a href="/" class="font-medium hover:underline" style="color: var(--primary-glow)">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                        Volver a la página principal
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- NUEVAS CLASES PARA EL TEMA OSCURO ---
+        const baseClasses = 'appearance-none relative block w-full px-3 py-3 pl-10 bg-slate-900/70 border border-slate-700 placeholder-slate-400 text-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm';
+        
+        const usernameField = document.getElementById('id_username');
+        const passwordField = document.getElementById('id_password');
+
+        if (usernameField) {
+            usernameField.placeholder = 'Nombre de usuario';
+            usernameField.classList.add(...baseClasses.split(' '));
+        }
+        if (passwordField) {
+            passwordField.placeholder = 'Contraseña';
+            passwordField.classList.add(...baseClasses.split(' '));
+        }
+    });
+    </script>
+</body>
+</html>

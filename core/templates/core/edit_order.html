@@ -1,0 +1,454 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Editar Pedido #{{ order.order_code }}{% endblock %}
+
+{% block content %}
+<div class="bg-slate-50 min-h-screen">
+    <form id="edit-order-form" method="post" enctype="multipart/form-data" class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% csrf_token %}
+        
+        <!-- Contenedor principal con Grid Layout -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+
+            <!-- Columna Principal: Detalles del Pedido -->
+            <div class="xl:col-span-2 space-y-8">
+                
+                <!-- Encabezado con efecto de desenfoque -->
+                <div class="sticky top-0 z-10 bg-slate-50/70 backdrop-blur-lg -mx-4 -mt-4 px-4 pt-4 pb-2 mb--2">
+                    <a href="{% url 'manage_customer_orders' order.customer.customer_code %}" class="text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center mb-2 group">
+                        <i class="fas fa-arrow-left mr-2 transition-transform group-hover:-translate-x-1"></i> Volver a los pedidos de {{ order.customer.name }}
+                    </a>
+                    <h1 class="text-4xl font-bold text-gray-900 tracking-tight flex items-center">
+                        <i class="fas fa-receipt text-gray-400 mr-4"></i> Pedido #{{ order.order_code }}
+                    </h1>
+                </div>
+
+                <!-- Card: Artículos del Pedido -->
+                <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <div class="p-6 border-b border-gray-200 bg-blue-50/50 rounded-t-2xl">
+                        <h2 class="text-xl font-semibold text-blue-900 flex items-center"><i class="fas fa-box-open text-blue-500 mr-3"></i> Artículos y Costos</h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <!-- Campo de Peso -->
+                        <div>
+                            <label for="{{ order_form.weight.id_for_label }}" class="block text-sm font-medium text-gray-700"><i class="fas fa-weight-hanging mr-2 text-gray-400"></i>{{ order_form.weight.label }}</label>
+                            <div class="relative mt-1">
+                                <i class="fas fa-weight-hanging absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                {{ order_form.weight }}
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">kg</span>
+                            </div>
+                        </div>
+
+                        <!-- Separador -->
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center" aria-hidden="true"><div class="w-full border-t border-gray-200"></div></div>
+                            <div class="relative flex justify-center"><span class="bg-white px-2 text-sm text-gray-500">Artículos</span></div>
+                        </div>
+
+                        <!-- Formset de Artículos -->
+                        {{ formset.management_form }}
+                        <div id="item-formset" class="space-y-4">
+                            {% for form in formset %}
+                            <div class="item-form flex items-center gap-4">
+                                <div class="flex-grow">{{ form.category }}</div>
+                                <div class="w-28 shrink-0"><div class="relative">{{ form.quantity }}<span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">Uds.</span></div></div>
+                                <button type="button" class="remove-item-btn text-gray-400 hover:text-red-500 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-lg transition-all duration-200 hover:bg-red-100 hover:scale-110"><i class="fas fa-trash-alt"></i></button>
+                                {{ form.id }}
+                                <div class="hidden">{{ form.DELETE }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" id="add-item-btn" class="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center group">
+                            <i class="fas fa-plus-circle mr-2 group-hover:rotate-90 transition-transform"></i>Añadir Artículo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card: Notas -->
+                <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                     <div class="p-6 border-b border-gray-200 bg-indigo-50/50 rounded-t-2xl">
+                        <h2 class="text-xl font-semibold text-indigo-900 flex items-center"><i class="fas fa-sticky-note text-indigo-500 mr-3"></i>{{ order_form.notes.label }}</h2>
+                    </div>
+                    <div class="p-6">
+                        {{ order_form.notes }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Lateral: Estado y Finanzas -->
+            <div class="xl:col-span-1">
+                <div class="sticky top-8 space-y-8">
+                    <!-- Card: Estado -->
+                    <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                         <div class="p-6 border-b border-gray-200 bg-amber-50/60 rounded-t-2xl">
+                            <h2 class="text-xl font-semibold text-amber-900 flex items-center"><i class="fas fa-tasks text-amber-500 mr-3"></i>{{ order_form.status.label }}</h2>
+                        </div>
+                         <div class="p-6">
+                             <div id="status-badge-display" class="w-full text-center py-3 rounded-xl font-bold text-lg transition-all duration-300">
+                                 <i id="status-badge-icon" class="mr-2"></i>
+                                 <span id="status-badge-text"></span>
+                             </div>
+                             <div class="mt-4">
+                                 {{ order_form.status }}
+                             </div>
+                         </div>
+                    </div>
+                    
+                    <!-- Card: Pagos -->
+                    <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <div class="p-6 border-b border-gray-200 bg-teal-50/60 rounded-t-2xl">
+                             <h2 class="text-xl font-semibold text-teal-900 flex items-center"><i class="fas fa-credit-card text-teal-500 mr-3"></i>Pagos y Descuentos</h2>
+                        </div>
+                        <div class="p-6 space-y-6">
+                             <div id="payment-status-badge-display" class="w-full text-center py-3 rounded-xl font-bold text-lg transition-all duration-300">
+                                <i id="payment-status-badge-icon" class="mr-2"></i>
+                                <span id="payment-status-badge-text"></span>
+                            </div>
+                             <div>
+                                <label for="{{ order_form.payment_status.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ order_form.payment_status.label }}</label>
+                                {{ order_form.payment_status }}
+                            </div>
+                            <div id="partial_amount_container">
+                                <label for="{{ order_form.partial_amount.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ order_form.partial_amount.label }}</label>
+                                <div class="relative mt-1">
+                                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-semibold pointer-events-none">S/</span>
+                                    {{ order_form.partial_amount }}
+                                </div>
+                            </div>
+                             <div>
+                                <label for="{{ order_form.payment_method.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ order_form.payment_method.label }}</label>
+                                {{ order_form.payment_method }}
+                            </div>
+                             <div>
+                                <label for="{{ order_form.discount_amount.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ order_form.discount_amount.label }}</label>
+                                <div class="relative mt-1">
+                                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-semibold pointer-events-none">S/</span>
+                                    {{ order_form.discount_amount }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card: Resumen Financiero -->
+                    <div class="bg-gray-800 text-white rounded-2xl shadow-lg">
+                         <div class="p-6 space-y-4">
+                             <div class="flex justify-between items-center text-gray-300">
+                                 <span>Subtotal</span>
+                                 <span id="subtotal-price" class="font-medium text-gray-100">S/ 0.00</span>
+                             </div>
+                              <div class="flex justify-between items-center text-gray-300">
+                                 <span>Descuento</span>
+                                 <span id="discount-display" class="font-medium text-red-400">- S/ 0.00</span>
+                             </div>
+                             <div class="flex justify-between items-center text-lg font-bold border-t border-gray-600 pt-4">
+                                 <span>Total a Pagar</span>
+                                 <span id="final-price">S/ 0.00</span>
+                             </div>
+                             <div class="flex justify-between items-center text-gray-300">
+                                 <span>Adelanto</span>
+                                 <span id="paid-display" class="font-medium text-gray-100">- S/ 0.00</span>
+                             </div>
+                             <div class="flex justify-between items-center text-2xl font-bold text-green-400 border-t-2 border-green-500 pt-4">
+                                 <span>RESTANTE</span>
+                                 <span id="remaining-price">S/ 0.00</span>
+                             </div>
+                         </div>
+                    </div>
+                     <!-- Barra de Acciones Fija -->
+                    <div class="pt-4">
+                         <button type="button" id="open-modal-btn" title="Guardar Cambios" class="w-full bg-gradient-to-br from-blue-600 to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-blue-500/50 active:scale-95 transition-all duration-200 flex items-center justify-center text-lg">
+                            <i class="fas fa-save mr-3"></i>
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de Confirmación -->
+<div id="confirmation-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300 opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+        <div class="p-6 text-center">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-5">
+                <i class="fas fa-file-invoice-dollar text-3xl text-blue-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900">Confirmar Cambios</h3>
+            <p class="mt-2 text-gray-500">Por favor, revisa los cambios antes de guardar.</p>
+        </div>
+        
+        <div id="modal-status-change" class="hidden px-6 pb-4 text-center">
+            <p class="text-sm text-gray-500 mb-2">El estado del pedido cambiará:</p>
+            <div class="flex items-center justify-center space-x-3">
+                <span id="modal-old-status" class="px-3 py-1 text-xs font-medium rounded-full"></span>
+                <i class="fas fa-long-arrow-alt-right text-gray-400"></i>
+                <span id="modal-new-status" class="px-3 py-1 text-sm font-bold rounded-full"></span>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 px-6 py-4 space-y-3 border-y">
+            <div class="flex justify-between text-lg">
+                <span class="text-gray-600">Total a Pagar:</span>
+                <span id="modal-total-price" class="font-bold text-gray-900">S/ 0.00</span>
+            </div>
+            <div class="flex justify-between text-xl">
+                <span class="text-gray-600 font-semibold">Monto Restante:</span>
+                <span id="modal-remaining-price" class="font-bold text-green-600">S/ 0.00</span>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end space-x-4">
+            <button type="button" id="cancel-btn" class="px-6 py-2.5 rounded-xl text-gray-700 bg-gray-200 hover:bg-gray-300 font-semibold transition-colors">
+                Cancelar
+            </button>
+            <button type="button" id="confirm-save-btn" class="px-6 py-2.5 rounded-xl text-white bg-blue-600 hover:bg-blue-700 font-bold flex items-center">
+                <i class="fas fa-check mr-2"></i>Confirmar y Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Template para nuevos formularios de artículos -->
+<div id="item-form-template" class="hidden">
+    <div class="item-form flex items-center gap-4">
+        <div class="flex-grow">{% if formset.empty_form %}{{ formset.empty_form.category }}{% endif %}</div>
+        <div class="w-28 shrink-0"><div class="relative">{% if formset.empty_form %}{{ formset.empty_form.quantity }}{% endif %}<span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">Uds.</span></div></div>
+        <button type="button" class="remove-item-btn text-gray-400 hover:text-red-500 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-lg transition-all duration-200 hover:bg-red-100 hover:scale-110"><i class="fas fa-trash-alt"></i></button>
+        {% if formset.empty_form %}{{ formset.empty_form.id }}{% endif %}
+        <div class="hidden">{% if formset.empty_form %}{{ formset.empty_form.DELETE }}{% endif %}</div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- ESTILOS Y CONFIGURACIÓN INICIAL ---
+    const baseClasses = 'block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200';
+    document.querySelectorAll('form input[type="text"], form input[type="number"], form input[type="email"], form select, form textarea').forEach(el => {
+        el.classList.add(...baseClasses.split(' '));
+        if (el.id.includes('weight')) el.classList.add('pl-10');
+        if (el.id.includes('discount') || el.id.includes('partial')) el.classList.add('pl-10');
+    });
+
+    // --- VARIABLES Y DATOS ---
+    const categoryPrices = JSON.parse('{{ category_prices_json|escapejs }}');
+    const weightPricePerKg = parseFloat('{{ order.weight_price_per_kg|stringformat:"f" }}');
+    const initialStatus = '{{ order.status }}';
+
+    const form = document.getElementById('edit-order-form');
+    const weightInput = document.getElementById('{{ order_form.weight.id_for_label }}');
+    const discountInput = document.getElementById('{{ order_form.discount_amount.id_for_label }}');
+    const partialAmountInput = document.getElementById('{{ order_form.partial_amount.id_for_label }}');
+    
+    const subtotalDisplay = document.getElementById('subtotal-price');
+    const discountDisplay = document.getElementById('discount-display');
+    const finalPriceDisplay = document.getElementById('final-price');
+    const paidDisplay = document.getElementById('paid-display');
+    const remainingPriceDisplay = document.getElementById('remaining-price');
+    
+    // --- LÓGICA DE CÁLCULO DE PRECIOS ---
+    function calculateAndUpdateTotal() {
+        let subtotal = 0;
+        const weight = parseFloat(weightInput.value) || 0;
+        if (weight > 0) subtotal += weight * weightPricePerKg;
+
+        document.querySelectorAll('.item-form').forEach(formRow => {
+            const categorySelect = formRow.querySelector('select[name$="-category"]');
+            const quantityInput = formRow.querySelector('input[name$="-quantity"]');
+            const deleteCheckbox = formRow.querySelector('input[type="checkbox"][name$="-DELETE"]');
+
+            if (categorySelect && quantityInput && !(deleteCheckbox && deleteCheckbox.checked)) {
+                const categoryId = categorySelect.value;
+                const quantity = parseInt(quantityInput.value) || 0;
+                if (categoryId && quantity > 0 && categoryPrices[categoryId]) {
+                    subtotal += quantity * parseFloat(categoryPrices[categoryId]);
+                }
+            }
+        });
+        
+        const discount = parseFloat(discountInput.value) || 0;
+        let partialAmount = parseFloat(partialAmountInput.value) || 0;
+        const finalTotal = subtotal - discount;
+
+        if (paymentStatusSelect.value === 'PAID') {
+            partialAmount = finalTotal;
+        }
+        
+        const remaining = finalTotal - partialAmount;
+
+        subtotalDisplay.textContent = `S/ ${subtotal.toFixed(2)}`;
+        discountDisplay.textContent = `- S/ ${discount.toFixed(2)}`;
+        finalPriceDisplay.textContent = `S/ ${finalTotal.toFixed(2)}`;
+        paidDisplay.textContent = `- S/ ${partialAmount.toFixed(2)}`;
+        remainingPriceDisplay.textContent = `S/ ${remaining.toFixed(2)}`;
+        
+        document.getElementById('modal-total-price').textContent = `S/ ${finalTotal.toFixed(2)}`;
+        document.getElementById('modal-remaining-price').textContent = `S/ ${remaining.toFixed(2)}`;
+    }
+
+    // --- LÓGICA PARA ESTADOS VISUALES ---
+    const statusSelect = document.getElementById('{{ order_form.status.id_for_label }}');
+    const statusBadge = document.getElementById('status-badge-display');
+    const statusBadgeIcon = document.getElementById('status-badge-icon');
+    const statusBadgeText = document.getElementById('status-badge-text');
+
+    const statusConfig = {
+        'PROCESSING': { color: 'bg-yellow-100 text-yellow-800', icon: 'fas fa-spinner fa-spin' },
+        'READY': { color: 'bg-green-100 text-green-800', icon: 'fas fa-check-circle' },
+        'DELIVERED': { color: 'bg-blue-100 text-blue-800', icon: 'fas fa-shipping-fast' },
+        'CANCELLED': { color: 'bg-red-100 text-red-800', icon: 'fas fa-times-circle' },
+    };
+
+    function updateStatusVisuals() {
+        const selectedStatus = statusSelect.value;
+        const config = statusConfig[selectedStatus] || { color: 'bg-gray-100 text-gray-800', icon: 'fas fa-question-circle' };
+        
+        statusBadge.className = `w-full text-center py-3 rounded-xl font-bold text-lg transition-all duration-300 ${config.color}`;
+        statusBadgeIcon.className = `${config.icon} mr-2`;
+        statusBadgeText.textContent = statusSelect.options[statusSelect.selectedIndex].text;
+    }
+    
+    // --- LÓGICA PARA FORMSET DINÁMICO ---
+    const formsetContainer = document.getElementById('item-formset');
+    const addItemBtn = document.getElementById('add-item-btn');
+    const totalFormsInput = document.querySelector('[name="formset-TOTAL_FORMS"]');
+    const formTemplateHtml = document.getElementById('item-form-template').innerHTML;
+    
+    addItemBtn.addEventListener('click', () => {
+        let formNum = parseInt(totalFormsInput.value);
+        const newFormHtml = formTemplateHtml.replace(/__prefix__/g, formNum);
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newFormHtml;
+        const newForm = tempDiv.firstElementChild;
+
+        newForm.querySelectorAll('input, select').forEach(el => el.classList.add(...baseClasses.split(' ')));
+        
+        formsetContainer.appendChild(newForm);
+        totalFormsInput.value = formNum + 1;
+        
+        addListenersToFormRow(newForm);
+        calculateAndUpdateTotal();
+    });
+    
+    function addListenersToFormRow(formRow) {
+        formRow.querySelector('.remove-item-btn').addEventListener('click', (e) => {
+            const row = e.currentTarget.closest('.item-form');
+            const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (deleteCheckbox) {
+                deleteCheckbox.checked = true;
+                row.classList.add('hidden');
+            } else {
+                row.remove();
+            }
+            calculateAndUpdateTotal();
+        });
+        formRow.querySelectorAll('select[name$="-category"], input[name$="-quantity"]').forEach(el => {
+            el.addEventListener('input', calculateAndUpdateTotal);
+        });
+    }
+    
+    // --- LÓGICA PARA PAGO ---
+    const paymentStatusSelect = document.getElementById('{{ order_form.payment_status.id_for_label }}');
+    const partialAmountContainer = document.getElementById('partial_amount_container');
+    const paymentBadge = document.getElementById('payment-status-badge-display');
+    const paymentBadgeIcon = document.getElementById('payment-status-badge-icon');
+    const paymentBadgeText = document.getElementById('payment-status-badge-text');
+    
+    const paymentStatusConfig = {
+        'PENDING': { color: 'bg-red-100 text-red-800', icon: 'fas fa-exclamation-triangle', text: 'Pago Pendiente' },
+        'PAID': { color: 'bg-green-100 text-green-800', icon: 'fas fa-check-double', text: 'Pagado Completamente' },
+        'PARTIAL': { color: 'bg-blue-100 text-blue-800', icon: 'fas fa-hand-holding-usd', text: 'Pago Parcial' },
+    };
+
+    function handlePaymentStatusChange() {
+        const selected = paymentStatusSelect.value;
+        const finalTotal = parseFloat(finalPriceDisplay.textContent.replace('S/ ', '')) || 0;
+        
+        const config = paymentStatusConfig[selected] || { color: 'bg-gray-100 text-gray-800', icon: 'fas fa-question-circle', text: 'Desconocido' };
+        paymentBadge.className = `w-full text-center py-3 rounded-xl font-bold text-lg transition-all duration-300 ${config.color}`;
+        paymentBadgeIcon.className = `${config.icon} mr-2`;
+        paymentBadgeText.textContent = config.text;
+
+        if (selected === 'PAID') {
+            partialAmountInput.value = finalTotal.toFixed(2);
+            partialAmountInput.readOnly = true;
+            partialAmountInput.classList.add('bg-gray-200');
+            partialAmountContainer.classList.remove('hidden');
+        } else if (selected === 'PENDING') {
+            partialAmountInput.value = '0.00';
+            partialAmountInput.readOnly = true;
+            partialAmountInput.classList.add('bg-gray-200');
+            partialAmountContainer.classList.add('hidden');
+        } else { // PARTIAL
+            partialAmountInput.readOnly = false;
+            partialAmountInput.classList.remove('bg-gray-200');
+            partialAmountContainer.classList.remove('hidden');
+        }
+        calculateAndUpdateTotal();
+    }
+    
+    // --- LÓGICA DEL MODAL ---
+    const modal = document.getElementById('confirmation-modal');
+    const modalContent = document.getElementById('modal-content');
+    const openModalBtn = document.getElementById('open-modal-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const confirmSaveBtn = document.getElementById('confirm-save-btn');
+    const modalStatusChangeDiv = document.getElementById('modal-status-change');
+    const modalOldStatus = document.getElementById('modal-old-status');
+    const modalNewStatus = document.getElementById('modal-new-status');
+
+    function showModal() {
+        const newStatus = statusSelect.value;
+        if (newStatus !== initialStatus) {
+            const oldStatusConfig = statusConfig[initialStatus] || { color: 'bg-gray-100 text-gray-800' };
+            const newStatusConfig = statusConfig[newStatus] || { color: 'bg-gray-100 text-gray-800' };
+
+            modalOldStatus.textContent = '{{ order.get_status_display }}';
+            modalOldStatus.className = `px-3 py-1 text-xs font-medium rounded-full ${oldStatusConfig.color}`;
+            
+            modalNewStatus.textContent = statusSelect.options[statusSelect.selectedIndex].text;
+            modalNewStatus.className = `px-3 py-1 text-sm font-bold rounded-full ${newStatusConfig.color}`;
+            
+            modalStatusChangeDiv.classList.remove('hidden');
+        } else {
+            modalStatusChangeDiv.classList.add('hidden');
+        }
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    }
+
+    function hideModal() {
+        modal.classList.add('opacity-0');
+        modalContent.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    openModalBtn.addEventListener('click', showModal);
+    cancelBtn.addEventListener('click', hideModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
+    confirmSaveBtn.addEventListener('click', () => form.submit());
+
+    // --- INICIALIZACIÓN Y EVENT LISTENERS ---
+    document.querySelectorAll('.item-form').forEach(addListenersToFormRow);
+    form.addEventListener('input', e => {
+        const targetId = e.target.id;
+        if ([weightInput.id, discountInput.id, partialAmountInput.id].includes(targetId)) {
+            calculateAndUpdateTotal();
+        }
+    });
+
+    statusSelect.addEventListener('change', updateStatusVisuals);
+    paymentStatusSelect.addEventListener('change', handlePaymentStatusChange);
+    
+    calculateAndUpdateTotal();
+    updateStatusVisuals();
+    handlePaymentStatusChange();
+});
+</script>
+</div>
+{% endblock %}
