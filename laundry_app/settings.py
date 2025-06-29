@@ -1,22 +1,26 @@
+# settings.py
+
 import os
 from pathlib import Path
-import dj_database_url
-from dotenv import load_dotenv
+from dotenv import load_dotenv # <--- AÑADIR ESTA LÍNEA
 
-# Cargar variables de entorno desde un archivo .env
-load_dotenv()
+# Cargar variables de entorno desde .env
+load_dotenv() # <--- AÑADIR ESTA LÍNEA
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Clave secreta leída desde las variables de entorno
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+# --- CAMBIO IMPORTANTE: Cargar la clave secreta desde el entorno ---
+SECRET_KEY = os.getenv('SECRET_KEY')
 
-# El modo DEBUG NUNCA debe ser True en producción
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
+# --- CAMBIO IMPORTANTE: Controlar el modo DEBUG desde el entorno ---
+# El '1' como string significa True. Cualquier otra cosa es False.
+DEBUG = os.getenv('DEBUG') == '1'
 
-# Hosts permitidos, leídos desde las variables de entorno
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
+# --- CAMBIO IMPORTANTE: Cargar los hosts permitidos desde el entorno ---
+ALLOWED_HOSTS_str = os.getenv('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_str.split(',') if host.strip()]
 
+# ... (resto de tus apps instaladas) ...
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -27,64 +31,41 @@ INSTALLED_APPS = [
     'core',
     'django_select2',
 ]
+# ...
 
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-ROOT_URLCONF = 'laundry_app.urls'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'laundry_app.wsgi.application'
-
-# Configuración de la base de datos desde la variable de entorno
+# --- CAMBIO IMPORTANTE: Configuración de la Base de Datos PostgreSQL ---
+# Reemplaza tu configuración de DATABASES con esto.
 DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOST'), # Esto será 'db', el nombre del servicio en docker-compose
+        'PORT': 5432,
+    }
 }
 
+# ... (resto de la configuración) ...
 
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+# --- CAMBIO IMPORTANTE: Configuración de archivos estáticos y de medios ---
+# Tu STATIC_URL ya está bien.
+STATIC_URL = 'static/'
+# STATICFILES_DIRS le dice a Django dónde encontrar tus archivos estáticos durante el desarrollo.
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
 ]
-
-LANGUAGE_CODE = 'es-es'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_TZ = True
-
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+# STATIC_ROOT es la carpeta a la que `collectstatic` copiará todos los archivos estáticos para producción.
+STATIC_ROOT = BASE_DIR / 'staticfiles' # <--- AÑADIR ESTA LÍNEA
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# MEDIA_ROOT apunta a la carpeta que definimos en el Dockerfile y docker-compose.yml
+MEDIA_ROOT = BASE_DIR / 'media' # <--- ASEGURARSE QUE ESTÉ ASÍ
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# ...
 
-# Configuración de seguridad para producción
-SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
-CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
-SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+# --- AÑADIR AL FINAL PARA PRODUCCIÓN SEGURA (OPCIONAL PERO RECOMENDADO) ---
+CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS if host not in ['localhost']]
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = True
